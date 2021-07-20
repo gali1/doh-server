@@ -51,32 +51,41 @@ pub fn authenticate(globals: &Globals, headers: &hyper::HeaderMap) -> Result<(),
 fn verify_jwt(globals: &Globals, jwt: &str) -> Result<(), StatusCode> {
   debug!("auth::verify_jwt {:?}", jwt);
 
-  if let Ok(parsed_header) = decode_header(&jwt) {
-    let alg = parsed_header.alg;
-    if alg != globals.validation_algorithm {
-      error!("Invalid algorithm");
+  let vk_str = match globals.validation_key.as_ref() {
+    Some(v) => v,
+    None => {
+      error!("Invalid configuration");
       return Err(StatusCode::FORBIDDEN);
     }
-    let decoding_key = match globals.get_type() {
-      AlgorithmType::HMAC => DecodingKey::from_secret(globals.validation_key.as_ref()),
-      AlgorithmType::EC => {
-        let ec_key_bytes = globals.validation_key.as_bytes();
-        DecodingKey::from_ec_pem(ec_key_bytes).unwrap()
-      }
-      AlgorithmType::RSA => {
-        let rsa_key_bytes = globals.validation_key.as_bytes();
-        DecodingKey::from_rsa_pem(rsa_key_bytes).unwrap()
-      }
-    };
-    let verified = decode::<serde_json::Value>(&jwt, &decoding_key, &Validation::new(globals.validation_algorithm));
-    if let Ok(_) = verified {
-      info!("Valid token: {:?}", verified);
-      Ok(())
-    } else {
-      error!("Invalid token");
-      Err(StatusCode::FORBIDDEN)
+  };
+  // TODO: Key loading should be stored in global. waste of resource.
+  let decoding_key = match globals.get_type() {
+    Some(AlgorithmType::HMAC) => DecodingKey::from_secret(vk_str.as_ref()),
+    Some(AlgorithmType::EC) => {
+      let ec_key_bytes = vk_str.as_bytes();
+      DecodingKey::from_ec_pem(ec_key_bytes).unwrap()
     }
+    Some(AlgorithmType::RSA) => {
+      let rsa_key_bytes = vk_str.as_bytes();
+      DecodingKey::from_rsa_pem(rsa_key_bytes).unwrap()
+    }
+    _ => {
+      // Assert to global has validation_algorithm
+      error!("Invalid configuration");
+      return Err(StatusCode::FORBIDDEN);
+    }
+  };
+
+  let verified = decode::<serde_json::Value>(
+    &jwt,
+    &decoding_key,
+    &Validation::new(globals.validation_algorithm.unwrap()),
+  );
+  if let Ok(_) = verified {
+    info!("Valid token: {:?}", verified);
+    Ok(())
   } else {
-    return Err(StatusCode::FORBIDDEN);
+    error!("Invalid token");
+    Err(StatusCode::FORBIDDEN)
   }
 }

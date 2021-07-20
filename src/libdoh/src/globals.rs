@@ -40,8 +40,8 @@ pub struct Globals {
     pub disable_post: bool,
     pub allow_odoh_post: bool,
     pub disable_auth: bool,
-    pub validation_key: String,
-    pub validation_algorithm: Algorithm,
+    pub validation_key: Option<String>,
+    pub validation_algorithm: Option<Algorithm>,
     pub odoh_configs_path: String,
     pub odoh_rotator: Arc<ODoHRotator>,
 
@@ -51,39 +51,51 @@ pub struct Globals {
 impl Globals {
     pub fn set_validation_algorithm(&mut self, algorithm_str: &str) {
         if let Ok(a) = Algorithm::from_str(algorithm_str) {
-            self.validation_algorithm = a;
+            self.validation_algorithm = Some(a);
         } else {
             panic!("Invalid algorithm")
         }
     }
-    pub fn get_type(&self) -> AlgorithmType {
+    pub fn set_validation_key(&mut self, key_str: &str) {
+        self.validation_key = Some(key_str.to_string());
+    }
+
+    pub fn get_type(&self) -> Option<AlgorithmType> {
         if self.is_hmac() {
-            AlgorithmType::HMAC
+            Some(AlgorithmType::HMAC)
         } else if self.is_ec() {
-            AlgorithmType::EC
+            Some(AlgorithmType::EC)
+        } else if self.is_rsa() {
+            Some(AlgorithmType::RSA)
         } else {
-            AlgorithmType::RSA
+            None
         }
     }
 
     pub fn is_hmac(&self) -> bool {
-        self.validation_algorithm == Algorithm::HS512
-            || self.validation_algorithm == Algorithm::HS384
-            || self.validation_algorithm == Algorithm::HS256
+        match self.validation_algorithm {
+            Some(Algorithm::HS256) | Some(Algorithm::HS384) | Some(Algorithm::HS512) => true,
+            _ => false,
+        }
     }
 
     pub fn is_ec(&self) -> bool {
-        self.validation_algorithm == Algorithm::ES256
-            || self.validation_algorithm == Algorithm::ES384
+        match self.validation_algorithm {
+            Some(Algorithm::ES256) | Some(Algorithm::ES384) => true,
+            _ => false,
+        }
     }
 
     pub fn is_rsa(&self) -> bool {
-        self.validation_algorithm == Algorithm::RS256
-            || self.validation_algorithm == Algorithm::RS384
-            || self.validation_algorithm == Algorithm::RS512
-            || self.validation_algorithm == Algorithm::PS256
-            || self.validation_algorithm == Algorithm::PS384
-            || self.validation_algorithm == Algorithm::PS512
+        match self.validation_algorithm {
+            Some(Algorithm::RS256)
+            | Some(Algorithm::RS384)
+            | Some(Algorithm::RS512)
+            | Some(Algorithm::PS256)
+            | Some(Algorithm::PS384)
+            | Some(Algorithm::PS512) => true,
+            _ => false,
+        }
     }
 }
 

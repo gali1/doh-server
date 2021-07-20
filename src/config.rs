@@ -147,7 +147,7 @@ pub fn parse_opts(globals: &mut Globals) {
                 .short("V")
                 .long("validation-key")
                 .takes_value(true)
-                .help("Validation key (default = \"secret\")"),
+                .help("Validation key"),
         )
         .arg(
             Arg::with_name("validation_key_path")
@@ -164,7 +164,8 @@ pub fn parse_opts(globals: &mut Globals) {
                 .short("A")
                 .long("validation-algorithm")
                 .takes_value(true)
-                .help("Signing algorithm: HS256|ES256 (default = \"HS256\")"),
+                .default_value(VALIDATION_ALGORITHM)
+                .help("Signing algorithm: HS256|ES256"),
         );
 
     #[cfg(feature = "tls")]
@@ -229,20 +230,24 @@ pub fn parse_opts(globals: &mut Globals) {
 
     if matches.is_present("validation") {
         if let Some(s) = matches.value_of("validation_key") {
-            globals.validation_key = s.to_string();
+            globals.set_validation_key(s);
         } else {
             if let Some(p) = matches.value_of("validation_key_path") {
                 if let Ok(content) = fs::read_to_string(p) {
                     if globals.is_hmac() {
                         let truncate_vec: Vec<&str> = content.split("\n").collect();
                         assert_eq!(truncate_vec.len() > 0, true);
-                        globals.validation_key = truncate_vec[0].to_string();
+                        globals.set_validation_key(truncate_vec[0]);
                     } else {
-                        globals.validation_key = (&content).to_string();
+                        globals.set_validation_key(&content);
                         //println!("{:?}", globals.validation_key);
                     }
                 }
             }
+        }
+    } else {
+        if !globals.disable_auth {
+            panic!("Validation key must be specified if auth is not disabled");
         }
     }
 

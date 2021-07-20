@@ -54,8 +54,8 @@ fn main() {
         disable_post: false,
         allow_odoh_post: false,
         disable_auth: false,
-        validation_key: VALIDATION_KEY.to_string(),
-        validation_algorithm: VALIDATION_ALGORITHM,
+        validation_key: None,
+        validation_algorithm: None,
         odoh_configs_path: ODOH_CONFIGS_PATH.to_string(),
         odoh_rotator: Arc::new(rotator),
 
