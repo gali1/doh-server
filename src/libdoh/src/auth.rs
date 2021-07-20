@@ -10,11 +10,12 @@ curl -i -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiO
 curl -i -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJzYW1wbGUtc3ViamVjdCIsImlhdCI6MTYyNTY1NTM5NywiZXhwIjoxOTQxMDE1Mzk3fQ._Wxohc89qpyRw0zXMiFh8Gof8UdgOsh2enmmUeWaOLaTAaagqVkxYGCCgj6FqHlGUkm2vrB4JQES370z8xCTdQ" -H 'accept: application/dns-message' 'http://localhost:58080/dns-query?dns=rmUBAAABAAAAAAAAB2NhcmVlcnMHb3BlbmRucwNjb20AAAEAAQ' | hexdump -C
 */
 
-use crate::auth_claims::Claims;
+// use crate::auth_claims::Claims;
 use crate::globals::*;
 use hyper::{Body, Response, StatusCode};
 use jsonwebtoken::{decode, decode_header, DecodingKey, Validation};
 use log::{debug, error, info, warn};
+use serde_json;
 
 pub fn authenticate(globals: &Globals, headers: &hyper::HeaderMap) -> Result<(), Response<Body>> {
   debug!("auth::authenticate, {:?}", headers);
@@ -67,7 +68,7 @@ fn verify_jwt(globals: &Globals, jwt: &str) -> Result<(), StatusCode> {
         DecodingKey::from_rsa_pem(rsa_key_bytes).unwrap()
       }
     };
-    let verified = decode::<Claims>(&jwt, &decoding_key, &Validation::new(alg));
+    let verified = decode::<serde_json::Value>(&jwt, &decoding_key, &Validation::new(globals.validation_algorithm));
     if let Ok(_) = verified {
       info!("Valid token: {:?}", verified);
       Ok(())
