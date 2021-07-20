@@ -1,3 +1,4 @@
+use crate::algorithm::*;
 use crate::odoh::ODoHRotator;
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -5,14 +6,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::runtime;
 
-use jsonwebtoken::Algorithm;
 use std::str::FromStr;
-
-pub enum AlgorithmType {
-    HMAC,
-    EC,
-    RSA,
-}
 
 #[cfg(feature = "tls")]
 use std::path::PathBuf;
@@ -40,7 +34,8 @@ pub struct Globals {
     pub disable_post: bool,
     pub allow_odoh_post: bool,
     pub disable_auth: bool,
-    pub validation_key: Option<String>,
+    // pub validation_key: Option<String>,
+    pub validation_key: Option<JwtValidationKey>,
     pub validation_algorithm: Option<Algorithm>,
     pub odoh_configs_path: String,
     pub odoh_rotator: Arc<ODoHRotator>,
@@ -57,20 +52,33 @@ impl Globals {
         }
     }
     pub fn set_validation_key(&mut self, key_str: &str) {
-        self.validation_key = Some(key_str.to_string());
-    }
-
-    pub fn get_type(&self) -> Option<AlgorithmType> {
-        if self.is_hmac() {
-            Some(AlgorithmType::HMAC)
-        } else if self.is_ec() {
-            Some(AlgorithmType::EC)
-        } else if self.is_rsa() {
-            Some(AlgorithmType::RSA)
-        } else {
-            None
+        // self.validation_key = Some(key_str.to_string());
+        match &self.validation_algorithm {
+            Some(va) => match JwtValidationKey::new(va, key_str) {
+                Ok(vk) => {
+                    self.validation_key = Some(vk);
+                }
+                Err(e) => {
+                    panic!("Invalid key for specified algorithm: {:?}", e);
+                }
+            },
+            None => {
+                panic!("Algorithm not specified");
+            }
         }
     }
+
+    // pub fn get_type(&self) -> Option<AlgorithmType> {
+    //     if self.is_hmac() {
+    //         Some(AlgorithmType::HMAC)
+    //     } else if self.is_ec() {
+    //         Some(AlgorithmType::EC)
+    //     } else if self.is_rsa() {
+    //         Some(AlgorithmType::RSA)
+    //     } else {
+    //         None
+    //     }
+    // }
 
     pub fn is_hmac(&self) -> bool {
         match self.validation_algorithm {
@@ -79,24 +87,24 @@ impl Globals {
         }
     }
 
-    pub fn is_ec(&self) -> bool {
-        match self.validation_algorithm {
-            Some(Algorithm::ES256) | Some(Algorithm::ES384) => true,
-            _ => false,
-        }
-    }
+    // pub fn is_ec(&self) -> bool {
+    //     match self.validation_algorithm {
+    //         Some(Algorithm::ES256) | Some(Algorithm::ES384) => true,
+    //         _ => false,
+    //     }
+    // }
 
-    pub fn is_rsa(&self) -> bool {
-        match self.validation_algorithm {
-            Some(Algorithm::RS256)
-            | Some(Algorithm::RS384)
-            | Some(Algorithm::RS512)
-            | Some(Algorithm::PS256)
-            | Some(Algorithm::PS384)
-            | Some(Algorithm::PS512) => true,
-            _ => false,
-        }
-    }
+    // pub fn is_rsa(&self) -> bool {
+    //     match self.validation_algorithm {
+    //         Some(Algorithm::RS256)
+    //         | Some(Algorithm::RS384)
+    //         | Some(Algorithm::RS512)
+    //         | Some(Algorithm::PS256)
+    //         | Some(Algorithm::PS384)
+    //         | Some(Algorithm::PS512) => true,
+    //         _ => false,
+    //     }
+    // }
 }
 
 #[derive(Debug, Clone, Default)]

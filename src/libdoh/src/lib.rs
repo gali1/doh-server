@@ -1,5 +1,6 @@
 mod auth;
 // mod auth_claims;
+mod algorithm;
 mod constants;
 pub mod dns;
 mod errors;
