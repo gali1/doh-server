@@ -1,3 +1,4 @@
+use byteorder::{BigEndian, ByteOrder};
 use log::{debug, error, info, warn};
 use std::convert::TryFrom;
 use trust_dns_proto::error::ProtoResult;
@@ -25,10 +26,8 @@ pub fn encode_dns_message(msg: &Message) -> ProtoResult<Vec<u8>> {
   let mut encoder = BinEncoder::new(&mut request_buffer);
   match msg.emit(&mut encoder) {
     Ok(_) => {
-      debug!(
-        "encoded message request_buffer.len = {}",
-        request_buffer.len()
-      );
+      let len = request_buffer.len();
+      debug!("encoded message request_buffer.len = {}", len);
       Ok(request_buffer)
     }
     Err(e) => {
@@ -41,7 +40,8 @@ pub fn encode_dns_message(msg: &Message) -> ProtoResult<Vec<u8>> {
 pub fn generate_block_message(msg: &Message) -> Message {
   let mut res = msg.clone();
   res.set_message_type(trust_dns_proto::op::MessageType::Response);
-  res.set_response_code(trust_dns_proto::op::ResponseCode::ServFail);
+  // res.set_response_code(trust_dns_proto::op::ResponseCode::ServFail);
+  res.set_response_code(trust_dns_proto::op::ResponseCode::NXDomain);
   res
 }
 
@@ -55,10 +55,7 @@ pub struct RequestQueryKey {
 
 impl RequestQueryKey {
   pub fn key_string(self) -> String {
-    format!(
-      "{:?} {:?} {:?}",
-      self.query_type, self.query_class, self.name
-    )
+    format!("{:?} {:?} {}", self.query_type, self.query_class, self.name)
   }
 }
 

@@ -357,8 +357,13 @@ impl DoH {
         if query.len() < MIN_DNS_PACKET_LEN {
             return Err(DoHError::Incomplete);
         }
-        ////////////////////////////
+        let _ = dns::set_edns_max_payload_size(&mut query, MAX_DNS_RESPONSE_LEN as _);
+        let globals = &self.globals;
+        let mut packet = Vec::new();
+        let (min_ttl, max_ttl, err_ttl) = (globals.min_ttl, globals.max_ttl, globals.err_ttl);
+        ////////////////////////////////////////////////////////
         // Parse dns query message
+        // TODO: フラグでblockとかクロークとかするとか分岐。
         // TODO: check flag to block, log, and do some options
         // TODO: maybe feature-ized,
         let copied_query = query.clone();
@@ -366,85 +371,78 @@ impl DoH {
         let query_keys =
             utils::RequestKey::try_from(&dns_msg).map_err(|_| DoHError::InvalidData)?;
         let keys = query_keys.keys();
+        let mut go_upstream = true;
+        // TODO: 以下まだサンプルコードなので必要あり
         for q_key in keys {
             debug!("Query: {}", q_key.clone().key_string());
-            let sample_block_domains = vec![
-                String::from("careers.opendns.com."),
-                String::from("github.com."),
-            ]; // TODO: FQDNやsubdomain matcher
+            let sample_block_domains = SAMPLE_DOMAIN_BLOCK_LIST; // TODO: FQDNやsubdomain matcher
             let nn = q_key.clone().name;
             if sample_block_domains.iter().any(|s| s == &nn) {
-                // debug!("{}", &&*q_key);
-                debug!("blocked!: {}", nn);
+                go_upstream = false;
+                debug!("domain blocked!: {}", nn);
                 let res_msg = utils::generate_block_message(&dns_msg);
-                debug!("response: {:#?}", res_msg);
-                let packet =
-                    utils::encode_dns_message(&res_msg).map_err(|_| DoHError::InvalidData)?;
-                let ttl = 100 as u32;
-                return Ok(DnsResponse { packet, ttl });
+                packet = utils::encode_dns_message(&res_msg).map_err(|_| DoHError::InvalidData)?;
             }
         }
-        ////////////////////////////
+        ////////////////////////////////////////////////////////
 
-        let _ = dns::set_edns_max_payload_size(&mut query, MAX_DNS_RESPONSE_LEN as _);
-        let globals = &self.globals;
-        let mut packet = vec![0; MAX_DNS_RESPONSE_LEN];
-        let (min_ttl, max_ttl, err_ttl) = (globals.min_ttl, globals.max_ttl, globals.err_ttl);
-
-        // UDP
-        {
-            let socket = UdpSocket::bind(&globals.local_bind_address)
-                .await
-                .map_err(DoHError::Io)?;
-            let expected_server_address = globals.server_address;
-            socket
-                .send_to(&query, &globals.server_address)
-                .map_err(DoHError::Io)
-                .await?;
-            let (len, response_server_address) =
-                socket.recv_from(&mut packet).map_err(DoHError::Io).await?;
-            if len < MIN_DNS_PACKET_LEN || expected_server_address != response_server_address {
-                return Err(DoHError::UpstreamIssue);
-            }
-            packet.truncate(len);
-        }
-
-        // TCP
-        if dns::is_truncated(&packet) {
-            let clients_count = self.globals.clients_count.current();
-            if self.globals.max_clients >= UDP_TCP_RATIO
-                && clients_count >= self.globals.max_clients / UDP_TCP_RATIO
+        if go_upstream {
+            packet = vec![0; MAX_DNS_RESPONSE_LEN];
+            // UDP
             {
-                return Err(DoHError::TooManyTcpSessions);
+                let socket = UdpSocket::bind(&globals.local_bind_address)
+                    .await
+                    .map_err(DoHError::Io)?;
+                let expected_server_address = globals.server_address;
+                socket
+                    .send_to(&query, &globals.server_address)
+                    .map_err(DoHError::Io)
+                    .await?;
+                let (len, response_server_address) =
+                    socket.recv_from(&mut packet).map_err(DoHError::Io).await?;
+                if len < MIN_DNS_PACKET_LEN || expected_server_address != response_server_address {
+                    return Err(DoHError::UpstreamIssue);
+                }
+                packet.truncate(len);
             }
-            let socket = match globals.server_address {
-                SocketAddr::V4(_) => TcpSocket::new_v4(),
-                SocketAddr::V6(_) => TcpSocket::new_v6(),
+
+            // TCP
+            if dns::is_truncated(&packet) {
+                let clients_count = self.globals.clients_count.current();
+                if self.globals.max_clients >= UDP_TCP_RATIO
+                    && clients_count >= self.globals.max_clients / UDP_TCP_RATIO
+                {
+                    return Err(DoHError::TooManyTcpSessions);
+                }
+                let socket = match globals.server_address {
+                    SocketAddr::V4(_) => TcpSocket::new_v4(),
+                    SocketAddr::V6(_) => TcpSocket::new_v6(),
+                }
+                .map_err(DoHError::Io)?;
+                let mut ext_socket = socket
+                    .connect(globals.server_address)
+                    .await
+                    .map_err(DoHError::Io)?;
+                ext_socket.set_nodelay(true).map_err(DoHError::Io)?;
+                let mut binlen = [0u8, 0];
+                BigEndian::write_u16(&mut binlen, query.len() as u16);
+                ext_socket.write_all(&binlen).await.map_err(DoHError::Io)?;
+                ext_socket.write_all(&query).await.map_err(DoHError::Io)?;
+                ext_socket.flush().await.map_err(DoHError::Io)?;
+                ext_socket
+                    .read_exact(&mut binlen)
+                    .await
+                    .map_err(DoHError::Io)?;
+                let packet_len = BigEndian::read_u16(&binlen) as usize;
+                if !(MIN_DNS_PACKET_LEN..=MAX_DNS_RESPONSE_LEN).contains(&packet_len) {
+                    return Err(DoHError::UpstreamIssue);
+                }
+                packet = vec![0u8; packet_len];
+                ext_socket
+                    .read_exact(&mut packet)
+                    .await
+                    .map_err(DoHError::Io)?;
             }
-            .map_err(DoHError::Io)?;
-            let mut ext_socket = socket
-                .connect(globals.server_address)
-                .await
-                .map_err(DoHError::Io)?;
-            ext_socket.set_nodelay(true).map_err(DoHError::Io)?;
-            let mut binlen = [0u8, 0];
-            BigEndian::write_u16(&mut binlen, query.len() as u16);
-            ext_socket.write_all(&binlen).await.map_err(DoHError::Io)?;
-            ext_socket.write_all(&query).await.map_err(DoHError::Io)?;
-            ext_socket.flush().await.map_err(DoHError::Io)?;
-            ext_socket
-                .read_exact(&mut binlen)
-                .await
-                .map_err(DoHError::Io)?;
-            let packet_len = BigEndian::read_u16(&binlen) as usize;
-            if !(MIN_DNS_PACKET_LEN..=MAX_DNS_RESPONSE_LEN).contains(&packet_len) {
-                return Err(DoHError::UpstreamIssue);
-            }
-            packet = vec![0u8; packet_len];
-            ext_socket
-                .read_exact(&mut packet)
-                .await
-                .map_err(DoHError::Io)?;
         }
 
         let ttl = if dns::is_recoverable_error(&packet) {

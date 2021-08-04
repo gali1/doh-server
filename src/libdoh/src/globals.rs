@@ -52,7 +52,6 @@ impl Globals {
         }
     }
     pub fn set_validation_key(&mut self, key_str: &str) {
-        println!("{}", key_str);
         // self.validation_key = Some(key_str.to_string());
         match &self.validation_algorithm {
             Some(va) => match JwtValidationKey::new(va, key_str) {

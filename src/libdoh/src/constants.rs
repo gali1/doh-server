@@ -7,3 +7,6 @@ pub const STALE_WHILE_REVALIDATE_SECS: u32 = 60;
 pub const CERTS_WATCH_DELAY_SECS: u32 = 10;
 pub const ODOH_KEY_ROTATION_SECS: u32 = 86400;
 pub const UDP_TCP_RATIO: usize = 8;
+
+pub const SAMPLE_DOMAIN_BLOCK_LIST: &'static [&'static str] =
+  &["alfalfalfa.com.", "doubleclick.net."];
