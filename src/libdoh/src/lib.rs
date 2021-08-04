@@ -8,6 +8,7 @@ mod globals;
 pub mod odoh;
 #[cfg(feature = "tls")]
 mod tls;
+mod utils;
 
 use crate::constants::*;
 pub use crate::errors::*;
@@ -20,6 +21,7 @@ use hyper::http;
 use hyper::server::conn::Http;
 use hyper::{Body, HeaderMap, Method, Request, Response, StatusCode};
 use log::{debug, error, info, warn};
+use std::convert::TryFrom;
 use std::net::SocketAddr;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -355,6 +357,35 @@ impl DoH {
         if query.len() < MIN_DNS_PACKET_LEN {
             return Err(DoHError::Incomplete);
         }
+        ////////////////////////////
+        // Parse dns query message
+        // TODO: check flag to block, log, and do some options
+        // TODO: maybe feature-ized,
+        let copied_query = query.clone();
+        let dns_msg = utils::decode_dns_message(copied_query).map_err(|_| DoHError::InvalidData)?;
+        let query_keys =
+            utils::RequestKey::try_from(&dns_msg).map_err(|_| DoHError::InvalidData)?;
+        let keys = query_keys.keys();
+        for q_key in keys {
+            debug!("Query: {}", q_key.clone().key_string());
+            let sample_block_domains = vec![
+                String::from("careers.opendns.com."),
+                String::from("github.com."),
+            ]; // TODO: FQDNやsubdomain matcher
+            let nn = q_key.clone().name;
+            if sample_block_domains.iter().any(|s| s == &nn) {
+                // debug!("{}", &&*q_key);
+                debug!("blocked!: {}", nn);
+                let res_msg = utils::generate_block_message(&dns_msg);
+                debug!("response: {:#?}", res_msg);
+                let packet =
+                    utils::encode_dns_message(&res_msg).map_err(|_| DoHError::InvalidData)?;
+                let ttl = 100 as u32;
+                return Ok(DnsResponse { packet, ttl });
+            }
+        }
+        ////////////////////////////
+
         let _ = dns::set_edns_max_payload_size(&mut query, MAX_DNS_RESPONSE_LEN as _);
         let globals = &self.globals;
         let mut packet = vec![0; MAX_DNS_RESPONSE_LEN];
@@ -436,6 +467,7 @@ impl DoH {
         ttl: u32,
         content_type: String,
     ) -> Result<Response<Body>, DoHError> {
+        // TODO: embed options in the response if needed
         let packet_len = packet.len();
         let response = Response::builder()
             .header(hyper::header::CONTENT_LENGTH, packet_len)
