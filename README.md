@@ -1,3 +1,51 @@
+# DoH Proxy with HTTP Authorization and Several Server Side Functions
+
+This repo is a fork of `doh-proxy`. This forked version has the following functions in addition to ones of original version.
+
+- access control by HTTP Authorization header with bearer token
+- server-side blocking by query names (currently returns NXDOMAIN)
+- (TODO:) server-side overriding query names with specific IP addresses
+- (TODO:) configuration file
+- (TODO:) logging
+
+## Usage
+
+```:bash
+
+USAGE:
+    doh-proxy [FLAGS] [OPTIONS]
+
+FLAGS:
+    -O, --allow-odoh-post      Allow POST queries over ODoH even if they have been disabed for DoH
+    -D, --disable-auth         Disable authentication using HTTP Authorization header
+    -K, --disable-keepalive    Disable keepalive
+    -P, --disable-post         Disable POST queries
+    -h, --help                 Prints help information
+        --version              Prints version information
+
+OPTIONS:
+    -B, --domains-blocklist <domains_blocklist>          Domains blocklist file path like "./dmoans_block.txt"
+    -E, --err-ttl <err_ttl>                              TTL for errors, in seconds [default: 2]
+    -H, --hostname <hostname>                            Host name (not IP address) DoH clients will use to connect
+    -l, --listen-address <listen_address>                Address to listen to [default: 127.0.0.1:3000]
+    -b, --local-bind-address <local_bind_address>        Address to connect from
+    -c, --max-clients <max_clients>                      Maximum number of simultaneous clients [default: 512]
+    -C, --max-concurrent <max_concurrent>                Maximum number of concurrent requests per client [default: 16]
+    -X, --max-ttl <max_ttl>                              Maximum TTL, in seconds [default: 604800]
+    -T, --min-ttl <min_ttl>                              Minimum TTL, in seconds [default: 10]
+    -p, --path <path>                                    URI path [default: /dns-query]
+    -g, --public-address <public_address>                External IP address DoH clients will connect to
+    -u, --server-address <server_address>                Address to connect to [default: 9.9.9.9:53]
+    -t, --timeout <timeout>                              Timeout, in seconds [default: 10]
+    -A, --validation-algorithm <validation_algorithm>    Signing algorithm: HS256|ES256 [default: HS256]
+    -V, --validation-key <validation_key>                Validation key
+    -W, --validation-key-path <validation_key_path>      Validation key file path like "./public_key.pem"
+```
+
+Below is the original README.md
+
+---
+
 # doh-proxy
 
 A fast and secure DoH (DNS-over-HTTPS) and ODoH (Oblivious DoH) server.

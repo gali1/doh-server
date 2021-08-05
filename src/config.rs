@@ -154,7 +154,7 @@ pub fn parse_opts(globals: &mut Globals) {
                 .short("W")
                 .long("validation-key-path")
                 .takes_value(true)
-                .help("Validation key file path like \"./public_key.pm\""),
+                .help("Validation key file path like \"./public_key.pem\""),
         )
         .groups(&[
             ArgGroup::with_name("validation").args(&["validation_key_path", "validation_key_path"])
@@ -166,6 +166,13 @@ pub fn parse_opts(globals: &mut Globals) {
                 .takes_value(true)
                 .default_value(VALIDATION_ALGORITHM)
                 .help("Signing algorithm: HS256|ES256"),
+        )
+        .arg(
+            Arg::with_name("domains_blocklist")
+                .short("B")
+                .long("domains-blocklist")
+                .takes_value(true)
+                .help("Domains blocklist file path like \"./dmoans_block.txt\""),
         );
 
     #[cfg(feature = "tls")]
@@ -249,6 +256,18 @@ pub fn parse_opts(globals: &mut Globals) {
         if !globals.disable_auth {
             panic!("Validation key must be specified if auth is not disabled");
         }
+    }
+
+    if let Some(blocklist_path) = matches.value_of("domains_blocklist") {
+        if let Ok(content) = fs::read_to_string(blocklist_path) {
+            let truncate_vec: Vec<&str> = content.split("\n").filter(|c| c.len() != 0).collect();
+            globals.set_domains_blocklist(truncate_vec);
+        }
+    }
+    // if options requiring to parse DNS message, this option is true
+    // TODO: update if new options are added.
+    if let Some(_) = globals.domains_blocklist {
+        globals.requires_dns_message_parsing = true;
     }
 
     #[cfg(feature = "tls")]

@@ -1,4 +1,3 @@
-use byteorder::{BigEndian, ByteOrder};
 use log::{debug, error, info, warn};
 use std::convert::TryFrom;
 use trust_dns_proto::error::ProtoResult;

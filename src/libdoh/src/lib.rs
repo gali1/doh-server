@@ -6,6 +6,8 @@ pub mod dns;
 mod errors;
 mod globals;
 pub mod odoh;
+mod plugin_block_domains;
+mod plugin_override_domains;
 #[cfg(feature = "tls")]
 mod tls;
 mod utils;
@@ -363,26 +365,30 @@ impl DoH {
         let (min_ttl, max_ttl, err_ttl) = (globals.min_ttl, globals.max_ttl, globals.err_ttl);
         ////////////////////////////////////////////////////////
         // Parse dns query message
-        // TODO: フラグでblockとかクロークとかするとか分岐。
-        // TODO: check flag to block, log, and do some options
-        // TODO: maybe feature-ized,
-        let copied_query = query.clone();
-        let dns_msg = utils::decode_dns_message(copied_query).map_err(|_| DoHError::InvalidData)?;
-        let query_keys =
-            utils::RequestKey::try_from(&dns_msg).map_err(|_| DoHError::InvalidData)?;
-        let keys = query_keys.keys();
         let mut go_upstream = true;
-        // TODO: 以下まだサンプルコードなので必要あり
-        for q_key in keys {
-            debug!("Query: {}", q_key.clone().key_string());
-            let sample_block_domains = SAMPLE_DOMAIN_BLOCK_LIST; // TODO: FQDNやsubdomain matcher
-            let nn = q_key.clone().name;
-            if sample_block_domains.iter().any(|s| s == &nn) {
-                go_upstream = false;
-                debug!("domain blocked!: {}", nn);
-                let res_msg = utils::generate_block_message(&dns_msg);
-                packet = utils::encode_dns_message(&res_msg).map_err(|_| DoHError::InvalidData)?;
-            }
+        if globals.requires_dns_message_parsing {
+            // TODO: log, and do some options
+            // TODO: maybe feature-ized,
+            let copied_query = query.clone();
+            let dns_msg =
+                utils::decode_dns_message(copied_query).map_err(|_| DoHError::InvalidData)?;
+            let query_keys =
+                utils::RequestKey::try_from(&dns_msg).map_err(|_| DoHError::InvalidData)?;
+            let keys = query_keys.keys();
+
+            ////////////////////////////////////////////////////////
+            // block by domain name
+            if let Some(blocklist) = globals.domains_blocklist.clone() {
+                for q_key in keys {
+                    debug!("Query: {}", q_key.clone().key_string()); // TODO: ログるならこれを出すという別オプションにした方が良さそう
+                    if blocklist.should_block(q_key) {
+                        go_upstream = false;
+                        packet =
+                            utils::encode_dns_message(&utils::generate_block_message(&dns_msg))
+                                .map_err(|_| DoHError::InvalidData)?;
+                    }
+                }
+            };
         }
         ////////////////////////////////////////////////////////
 

@@ -13,6 +13,7 @@ services:
     volumes:
       - ./.env:/opt/doh-proxy/etc/.env
       - ${VALIDATION_KEY_PATH}:/opt/doh-proxy/etc/public_key.pem
+      - ${DOMAINS_BLOCK_LIST}:/opt/doh-proxy/etc/blocklist.txt
     networks:
       net-front:
 

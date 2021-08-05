@@ -56,7 +56,8 @@ fn main() {
         disable_auth: false,
         validation_key: None,
         validation_algorithm: None,
-        // validation_key_obj: None,
+        domains_blocklist: None,
+        requires_dns_message_parsing: false,
         odoh_configs_path: ODOH_CONFIGS_PATH.to_string(),
         odoh_rotator: Arc::new(rotator),
 

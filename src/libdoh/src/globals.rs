@@ -1,5 +1,8 @@
 use crate::algorithm::*;
 use crate::odoh::ODoHRotator;
+use crate::plugin_block_domains::DomainBlockList;
+use regex::Regex;
+use std::collections::HashSet;
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -34,9 +37,10 @@ pub struct Globals {
     pub disable_post: bool,
     pub allow_odoh_post: bool,
     pub disable_auth: bool,
-    // pub validation_key: Option<String>,
     pub validation_key: Option<JwtValidationKey>,
     pub validation_algorithm: Option<Algorithm>,
+    pub domains_blocklist: Option<DomainBlockList>,
+    pub requires_dns_message_parsing: bool,
     pub odoh_configs_path: String,
     pub odoh_rotator: Arc<ODoHRotator>,
 
@@ -68,18 +72,6 @@ impl Globals {
         }
     }
 
-    // pub fn get_type(&self) -> Option<AlgorithmType> {
-    //     if self.is_hmac() {
-    //         Some(AlgorithmType::HMAC)
-    //     } else if self.is_ec() {
-    //         Some(AlgorithmType::EC)
-    //     } else if self.is_rsa() {
-    //         Some(AlgorithmType::RSA)
-    //     } else {
-    //         None
-    //     }
-    // }
-
     pub fn is_hmac(&self) -> bool {
         match self.validation_algorithm {
             Some(Algorithm::HS256) | Some(Algorithm::HS384) | Some(Algorithm::HS512) => true,
@@ -87,24 +79,17 @@ impl Globals {
         }
     }
 
-    // pub fn is_ec(&self) -> bool {
-    //     match self.validation_algorithm {
-    //         Some(Algorithm::ES256) | Some(Algorithm::ES384) => true,
-    //         _ => false,
-    //     }
-    // }
-
-    // pub fn is_rsa(&self) -> bool {
-    //     match self.validation_algorithm {
-    //         Some(Algorithm::RS256)
-    //         | Some(Algorithm::RS384)
-    //         | Some(Algorithm::RS512)
-    //         | Some(Algorithm::PS256)
-    //         | Some(Algorithm::PS384)
-    //         | Some(Algorithm::PS512) => true,
-    //         _ => false,
-    //     }
-    // }
+    pub fn set_domains_blocklist(&mut self, vec_domain_str: Vec<&str>) {
+        // TODO: currently only prefix match with '*' is supported
+        let re =
+            Regex::new(r"^([a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.)+([a-zA-Z]{2,}|\*)$").unwrap();
+        let hs: HashSet<String> = vec_domain_str
+            .iter()
+            .filter(|x| re.is_match(x))
+            .map(|y| y.to_string())
+            .collect();
+        self.domains_blocklist = Some(DomainBlockList { domains: hs });
+    }
 }
 
 #[derive(Debug, Clone, Default)]
