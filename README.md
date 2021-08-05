@@ -3,7 +3,7 @@
 This repo is a fork of `doh-proxy`. This forked version has the following functions in addition to ones of original version.
 
 - access control by HTTP Authorization header with bearer token
-- server-side blocking by query names (currently returns NXDOMAIN)
+- server-side blocking by query names (currently returns NXDOMAIN, and supports exact match, suffix match, and prefix match)
 - (TODO:) server-side overriding query names with specific IP addresses
 - (TODO:) configuration file
 - (TODO:) logging
