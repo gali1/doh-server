@@ -379,7 +379,7 @@ impl DoH {
 
             ////////////////////////////////////////////////////////
             // TODO: ログるならこれを出すという別オプションにした方が良さそう
-            debug!("Query: {}", q_key.clone().key_string());
+            info!("Query: {}", q_key.clone().key_string());
             if let Some(query_plugins) = globals.query_plugins.clone() {
                 let execution_result = query_plugins.execute(&dns_msg, q_key, min_ttl)?;
                 match execution_result.action {

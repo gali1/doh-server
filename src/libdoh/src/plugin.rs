@@ -50,7 +50,7 @@ impl AppliedQueryPlugins {
       match plugin {
         QueryPlugin::PluginDomainOverride(override_rule) => {
           if let Some(mapsto) = override_rule.find_and_override(q_key) {
-            debug!("Query {} maps to {:?}", q_key.name, mapsto);
+            info!("Query {} maps to {:?}", q_key.name, mapsto);
             response.action = QueryPluginAction::Overridden;
             response.response_msg = Some(
               utils::generate_override_message(&dns_msg, q_key, mapsto, min_ttl)
@@ -61,7 +61,7 @@ impl AppliedQueryPlugins {
         }
         QueryPlugin::PluginDomainBlock(block_rule) => {
           if block_rule.should_block(q_key) {
-            debug!("Query {} is blocked", q_key.name);
+            info!("Query {} is blocked", q_key.name);
             response.action = QueryPluginAction::Blocked;
             response.response_msg = Some(utils::generate_block_message(&dns_msg));
           }

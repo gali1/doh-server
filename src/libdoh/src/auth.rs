@@ -85,7 +85,7 @@ fn verify_jwt(globals: &Globals, jwt: &str) -> Result<(), StatusCode> {
   let clm = pk.verify_token(jwt);
   match clm {
     Ok(c) => {
-      info!("Valid token {:?}", serde_json::to_string(&c));
+      debug!("Valid token {:?}", serde_json::to_string(&c));
       return Ok(());
     }
     Err(e) => {
