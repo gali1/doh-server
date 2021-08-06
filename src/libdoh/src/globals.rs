@@ -84,45 +84,6 @@ impl Globals {
             _ => false,
         }
     }
-
-    // pub fn set_domain_block(&mut self, vec_domain_str: Vec<&str>) {
-    //     // TODO: currently only prefix match with '*' is supported
-    //     let re = Regex::new(&format!("{}{}{}", r"^", REGEXP_DOMAIN_OR_PREFIX, r"$")).unwrap();
-    //     let hs: HashSet<String> = vec_domain_str
-    //         .iter()
-    //         .filter(|x| re.is_match(x))
-    //         .map(|y| y.to_string())
-    //         .collect();
-    //     self.domain_block = Some(DomainBlockRule { domains: hs });
-    // }
-    // pub fn set_domain_override(&mut self, vec_domain_map_str: Vec<&str>) {
-    //     let redomain_split_space =
-    //         Regex::new(&format!("{}{}{}", r"^", REGEXP_DOMAIN, r"\s+\S+$")).unwrap();
-    //     let hm: HashMap<String, Vec<MapsTo>> = vec_domain_map_str
-    //         .iter()
-    //         .filter(|x| redomain_split_space.is_match(x)) // filter by primary key (domain)
-    //         .filter_map(|x| {
-    //             let split: Vec<&str> = x.split_whitespace().collect();
-    //             if split.len() != 2 {
-    //                 warn!("Invalid override rule: {}", split[0]);
-    //                 None
-    //             } else {
-    //                 let targets: Vec<MapsTo> =
-    //                     split[1].split(',').filter_map(|x| MapsTo::new(x)).collect();
-    //                 let original_len = split[1].split(',').collect::<Vec<&str>>().len();
-    //                 let res = match original_len == targets.len() {
-    //                     true => Some((split[0].to_string(), targets)),
-    //                     false => {
-    //                         warn!("Invalid override rule: {}", split[0]);
-    //                         None
-    //                     }
-    //                 };
-    //                 res
-    //             }
-    //         })
-    //         .collect();
-    //     self.domain_override = Some(DomainOverrideRule { domain_maps: hm });
-    // }
 }
 
 #[derive(Debug, Clone, Default)]
