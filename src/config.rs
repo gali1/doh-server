@@ -1,3 +1,6 @@
+use libdoh::plugin::{AppliedQueryPlugins, QueryPlugin};
+use libdoh::plugin_block_domains::DomainBlockRule;
+use libdoh::plugin_override_domains::DomainOverrideRule;
 use libdoh::*;
 
 use crate::constants::*;
@@ -168,11 +171,18 @@ pub fn parse_opts(globals: &mut Globals) {
                 .help("Signing algorithm: HS256|ES256"),
         )
         .arg(
-            Arg::with_name("domains_blocklist")
+            Arg::with_name("domain_block")
                 .short("B")
-                .long("domains-blocklist")
+                .long("domain-block-rule")
                 .takes_value(true)
-                .help("Domains blocklist file path like \"./dmoans_block.txt\""),
+                .help("Domains block rule file path like \"./domains_block.txt\""),
+        )
+        .arg(
+            Arg::with_name("domain_override")
+                .short("R")
+                .long("domain-override-rule")
+                .takes_value(true)
+                .help("Domains override rule file path like \"./domains_override.txt\""),
         );
 
     #[cfg(feature = "tls")]
@@ -258,15 +268,31 @@ pub fn parse_opts(globals: &mut Globals) {
         }
     }
 
-    if let Some(blocklist_path) = matches.value_of("domains_blocklist") {
-        if let Ok(content) = fs::read_to_string(blocklist_path) {
+    let mut query_plugins = AppliedQueryPlugins::new();
+    if let Some(override_list_path) = matches.value_of("domain_override") {
+        if let Ok(content) = fs::read_to_string(override_list_path) {
             let truncate_vec: Vec<&str> = content.split("\n").filter(|c| c.len() != 0).collect();
-            globals.set_domains_blocklist(truncate_vec);
+            query_plugins.add(QueryPlugin::PluginDomainOverride(DomainOverrideRule::new(
+                truncate_vec,
+            )));
+            // globals.set_domain_override(truncate_vec);
         }
     }
+    if let Some(blocklist_path) = matches.value_of("domain_block") {
+        if let Ok(content) = fs::read_to_string(blocklist_path) {
+            let truncate_vec: Vec<&str> = content.split("\n").filter(|c| c.len() != 0).collect();
+            query_plugins.add(QueryPlugin::PluginDomainBlock(DomainBlockRule::new(
+                truncate_vec,
+            )));
+            // globals.set_domain_block(truncate_vec);
+        }
+    }
+
     // if options requiring to parse DNS message, this option is true
-    // TODO: update if new options are added.
-    if let Some(_) = globals.domains_blocklist {
+    if query_plugins.plugins.len() > 0 {
+        globals.requires_dns_message_parsing = true;
+        globals.query_plugins = Some(query_plugins);
+    } else {
         globals.requires_dns_message_parsing = true;
     }
 

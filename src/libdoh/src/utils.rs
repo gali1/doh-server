@@ -1,10 +1,16 @@
+use crate::plugin_override_domains::MapsTo;
+use anyhow::Error;
 use log::{debug, error, info, warn};
 use std::convert::TryFrom;
+use std::str::FromStr;
 use trust_dns_proto::error::ProtoResult;
 use trust_dns_proto::op::header::MessageType;
 use trust_dns_proto::op::Message;
 use trust_dns_proto::rr::dns_class::DNSClass;
+use trust_dns_proto::rr::domain::Name;
+use trust_dns_proto::rr::record_data::RData;
 use trust_dns_proto::rr::record_type::RecordType;
+use trust_dns_proto::rr::resource::Record;
 use trust_dns_proto::serialize::binary::{BinDecodable, BinDecoder, BinEncodable, BinEncoder};
 
 // https://github.com/aaronriekenberg/rust-doh-proxy/blob/master/src/doh/utils.rs
@@ -44,12 +50,33 @@ pub fn generate_block_message(msg: &Message) -> Message {
   res
 }
 
+pub fn generate_override_message(
+  msg: &Message,
+  q_key: &RequestQueryKey,
+  mapsto: &MapsTo,
+  min_ttl: u32,
+) -> Result<Message, Error> {
+  let mut res = msg.clone();
+  res.set_message_type(trust_dns_proto::op::MessageType::Response);
+  res.set_response_code(trust_dns_proto::op::ResponseCode::NoError);
+  let name = Name::from_str(&q_key.name)?;
+  match mapsto {
+    MapsTo::Ipv4Addr(ipv4) => {
+      res.insert_answers(vec![Record::from_rdata(name, min_ttl, RData::A(*ipv4))]);
+    }
+    MapsTo::Ipv6Addr(ipv6) => {
+      res.insert_answers(vec![Record::from_rdata(name, min_ttl, RData::AAAA(*ipv6))]);
+    }
+  }
+  Ok(res)
+}
+
 // https://github.com/aaronriekenberg/rust-doh-proxy/blob/master/src/doh/request_key.rs
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct RequestQueryKey {
   pub name: String,
-  query_type: RecordType,
-  query_class: DNSClass,
+  pub query_type: RecordType,
+  pub query_class: DNSClass,
 }
 
 impl RequestQueryKey {

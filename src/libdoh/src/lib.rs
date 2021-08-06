@@ -6,8 +6,9 @@ pub mod dns;
 mod errors;
 mod globals;
 pub mod odoh;
-mod plugin_block_domains;
-mod plugin_override_domains;
+pub mod plugin;
+pub mod plugin_block_domains;
+pub mod plugin_override_domains;
 #[cfg(feature = "tls")]
 mod tls;
 mod utils;
@@ -374,21 +375,55 @@ impl DoH {
                 utils::decode_dns_message(copied_query).map_err(|_| DoHError::InvalidData)?;
             let query_keys =
                 utils::RequestKey::try_from(&dns_msg).map_err(|_| DoHError::InvalidData)?;
-            let keys = query_keys.keys();
+            let q_key = &query_keys.keys()[0]; // NOTE: Nowadays QDCOUNT is usually never greater than 1...
 
             ////////////////////////////////////////////////////////
-            // block by domain name
-            if let Some(blocklist) = globals.domains_blocklist.clone() {
-                for q_key in keys {
-                    debug!("Query: {}", q_key.clone().key_string()); // TODO: ログるならこれを出すという別オプションにした方が良さそう
-                    if blocklist.should_block(q_key) {
+            // TODO: ログるならこれを出すという別オプションにした方が良さそう
+            debug!("Query: {}", q_key.clone().key_string());
+            if let Some(query_plugins) = globals.query_plugins.clone() {
+                println!("omg");
+                let execution_result = query_plugins.execute(&dns_msg, q_key, min_ttl)?;
+                match execution_result.action {
+                    plugin::QueryPluginAction::Pass => go_upstream = true,
+                    _ => {
                         go_upstream = false;
-                        packet =
-                            utils::encode_dns_message(&utils::generate_block_message(&dns_msg))
+                        if let Some(r_msg) = execution_result.response_msg {
+                            packet = utils::encode_dns_message(&r_msg)
                                 .map_err(|_| DoHError::InvalidData)?;
+                        } else {
+                            return Err(DoHError::InvalidData);
+                        }
                     }
                 }
-            };
+            }
+            // let mut skip_block = false;
+            // ////////////////////////////////////////////////////////
+            // // override domain name
+            // if let Some(override_rule) = globals.domain_override.clone() {
+            //     if let Some(mapsto) = override_rule.find_and_override(q_key) {
+            //         debug!("Query {} maps to {:?}", q_key.name, mapsto);
+            //         go_upstream = false;
+            //         skip_block = true;
+            //         let overridden_msg =
+            //             utils::generate_override_message(&dns_msg, q_key, mapsto, min_ttl)
+            //                 .map_err(|_| DoHError::InvalidData)?;
+            //         packet = utils::encode_dns_message(&overridden_msg)
+            //             .map_err(|_| DoHError::InvalidData)?;
+            //     }
+            // }
+            // ////////////////////////////////////////////////////////
+            // // block by domain name
+            // if !skip_block {
+            //     if let Some(blocklist) = globals.domain_block.clone() {
+            //         if blocklist.should_block(q_key) {
+            //             debug!("Query {} is blocked", q_key.name);
+            //             go_upstream = false;
+            //             packet =
+            //                 utils::encode_dns_message(&utils::generate_block_message(&dns_msg))
+            //                     .map_err(|_| DoHError::InvalidData)?;
+            //         }
+            //     };
+            // }
         }
         ////////////////////////////////////////////////////////
 

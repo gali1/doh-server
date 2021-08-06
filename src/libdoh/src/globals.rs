@@ -1,8 +1,12 @@
 use crate::algorithm::*;
+use crate::constants::*;
 use crate::odoh::ODoHRotator;
-use crate::plugin_block_domains::DomainBlockList;
+use crate::plugin::AppliedQueryPlugins;
+use crate::plugin_block_domains::DomainBlockRule;
+use crate::plugin_override_domains::{DomainOverrideRule, MapsTo};
+use log::{debug, error, info, warn};
 use regex::Regex;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -39,7 +43,9 @@ pub struct Globals {
     pub disable_auth: bool,
     pub validation_key: Option<JwtValidationKey>,
     pub validation_algorithm: Option<Algorithm>,
-    pub domains_blocklist: Option<DomainBlockList>,
+    pub domain_block: Option<DomainBlockRule>,
+    pub domain_override: Option<DomainOverrideRule>,
+    pub query_plugins: Option<AppliedQueryPlugins>,
     pub requires_dns_message_parsing: bool,
     pub odoh_configs_path: String,
     pub odoh_rotator: Arc<ODoHRotator>,
@@ -79,17 +85,44 @@ impl Globals {
         }
     }
 
-    pub fn set_domains_blocklist(&mut self, vec_domain_str: Vec<&str>) {
-        // TODO: currently only prefix match with '*' is supported
-        let re =
-            Regex::new(r"^([a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.)+([a-zA-Z]{2,}|\*)$").unwrap();
-        let hs: HashSet<String> = vec_domain_str
-            .iter()
-            .filter(|x| re.is_match(x))
-            .map(|y| y.to_string())
-            .collect();
-        self.domains_blocklist = Some(DomainBlockList { domains: hs });
-    }
+    // pub fn set_domain_block(&mut self, vec_domain_str: Vec<&str>) {
+    //     // TODO: currently only prefix match with '*' is supported
+    //     let re = Regex::new(&format!("{}{}{}", r"^", REGEXP_DOMAIN_OR_PREFIX, r"$")).unwrap();
+    //     let hs: HashSet<String> = vec_domain_str
+    //         .iter()
+    //         .filter(|x| re.is_match(x))
+    //         .map(|y| y.to_string())
+    //         .collect();
+    //     self.domain_block = Some(DomainBlockRule { domains: hs });
+    // }
+    // pub fn set_domain_override(&mut self, vec_domain_map_str: Vec<&str>) {
+    //     let redomain_split_space =
+    //         Regex::new(&format!("{}{}{}", r"^", REGEXP_DOMAIN, r"\s+\S+$")).unwrap();
+    //     let hm: HashMap<String, Vec<MapsTo>> = vec_domain_map_str
+    //         .iter()
+    //         .filter(|x| redomain_split_space.is_match(x)) // filter by primary key (domain)
+    //         .filter_map(|x| {
+    //             let split: Vec<&str> = x.split_whitespace().collect();
+    //             if split.len() != 2 {
+    //                 warn!("Invalid override rule: {}", split[0]);
+    //                 None
+    //             } else {
+    //                 let targets: Vec<MapsTo> =
+    //                     split[1].split(',').filter_map(|x| MapsTo::new(x)).collect();
+    //                 let original_len = split[1].split(',').collect::<Vec<&str>>().len();
+    //                 let res = match original_len == targets.len() {
+    //                     true => Some((split[0].to_string(), targets)),
+    //                     false => {
+    //                         warn!("Invalid override rule: {}", split[0]);
+    //                         None
+    //                     }
+    //                 };
+    //                 res
+    //             }
+    //         })
+    //         .collect();
+    //     self.domain_override = Some(DomainOverrideRule { domain_maps: hm });
+    // }
 }
 
 #[derive(Debug, Clone, Default)]

@@ -32,7 +32,8 @@
         // "--validation-algorithm=HS256",
         // "--validation-key-path=../secret_key_hs256.example"
         // "--disable-auth"
-        "--domains-blocklist=../.private/blocklist.txt",
+        "--domain-block-rule=../.private/blocklist.txt",
+        "--domain-override-rule=../.private/override.txt",
       ],
       "cwd": "${workspaceFolder}/.private"
     }

@@ -4,14 +4,13 @@ This repo is a fork of `doh-proxy`. This forked version has the following functi
 
 - access control by HTTP Authorization header with bearer token
 - server-side blocking by query names (currently returns NXDOMAIN, and supports exact match, suffix match, and prefix match)
-- (TODO:) server-side overriding query names with specific IP addresses
+- server-side overriding query names with specific IP addresses
 - (TODO:) configuration file
 - (TODO:) logging
 
 ## Usage
 
 ```:bash
-
 USAGE:
     doh-proxy [FLAGS] [OPTIONS]
 
@@ -24,7 +23,8 @@ FLAGS:
         --version              Prints version information
 
 OPTIONS:
-    -B, --domains-blocklist <domains_blocklist>          Domains blocklist file path like "./dmoans_block.txt"
+    -B, --domain-block-rule <domain_block>               Domains block rule file path like "./domains_block.txt"
+    -R, --domain-override-rule <domain_override>         Domains override rule file path like "./domains_override.txt"
     -E, --err-ttl <err_ttl>                              TTL for errors, in seconds [default: 2]
     -H, --hostname <hostname>                            Host name (not IP address) DoH clients will use to connect
     -l, --listen-address <listen_address>                Address to listen to [default: 127.0.0.1:3000]

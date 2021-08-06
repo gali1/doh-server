@@ -1,13 +1,26 @@
+use crate::constants::*;
 use crate::utils::RequestQueryKey;
 use log::{debug, error, info, warn};
+use regex::Regex;
 use std::collections::HashSet;
 
 #[derive(Debug, Clone)]
-pub struct DomainBlockList {
+pub struct DomainBlockRule {
   pub domains: HashSet<String>,
 }
 
-impl DomainBlockList {
+impl DomainBlockRule {
+  pub fn new(vec_domain_str: Vec<&str>) -> DomainBlockRule {
+    // TODO: currently only prefix match with '*' is supported
+    let re = Regex::new(&format!("{}{}{}", r"^", REGEXP_DOMAIN_OR_PREFIX, r"$")).unwrap();
+    let hs: HashSet<String> = vec_domain_str
+      .iter()
+      .filter(|x| re.is_match(x))
+      .map(|y| y.to_string())
+      .collect();
+    DomainBlockRule { domains: hs }
+  }
+
   pub fn should_block(&self, q_key: &RequestQueryKey) -> bool {
     // remove final dot
     let mut nn = q_key.clone().name;
