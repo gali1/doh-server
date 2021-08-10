@@ -586,9 +586,9 @@ impl DoH {
                 self.globals.tls_cert_path.is_some() && self.globals.tls_cert_key_path.is_some();
         }
         if tls_enabled {
-            println!("Listening on https://{}{}", listen_address, path);
+            info!("Listening on https://{}{}", listen_address, path);
         } else {
-            println!("Listening on http://{}{}", listen_address, path);
+            info!("Listening on http://{}{}", listen_address, path);
         }
 
         let mut server = Http::new();

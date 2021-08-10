@@ -16,13 +16,29 @@ use crate::constants::*;
 use libdoh::odoh::ODoHRotator;
 use libdoh::reexports::tokio;
 // use std::env;
+use std::io::Write;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 use std::time::Duration;
 
 fn main() {
     // env::set_var("RUST_LOG", "info");
-    env_logger::init();
+    // env_logger::init();
+    env_logger::Builder::from_default_env()
+        .format(|buf, record| {
+            let ts = buf.timestamp();
+            writeln!(
+                buf,
+                "{} [{}] {}",
+                ts,
+                record.level(),
+                // record.target(),
+                record.args(),
+                // record.file().unwrap_or("unknown"),
+                // record.line().unwrap_or(0),
+            )
+        })
+        .init();
     let mut runtime_builder = tokio::runtime::Builder::new_multi_thread();
     runtime_builder.enable_all();
     runtime_builder.thread_name("doh-proxy");

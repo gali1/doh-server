@@ -5,6 +5,7 @@ use libdoh::plugin_block_domains::DomainBlockRule;
 use libdoh::plugin_override_domains::DomainOverrideRule;
 use libdoh::reexports::jwt_simple::prelude::*;
 use libdoh::*;
+use log::{debug, error, info, warn};
 use std::collections::HashSet;
 use std::fs;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6, ToSocketAddrs};
@@ -261,6 +262,7 @@ pub fn parse_opts(globals: &mut Globals) {
     globals.disable_auth = matches.is_present("disable_auth");
 
     if let Some(a) = matches.value_of("validation_algorithm") {
+        info!("[Auth] Authentication is enabled: {:?}", &a);
         globals.set_validation_algorithm(a);
     }
 
@@ -276,11 +278,11 @@ pub fn parse_opts(globals: &mut Globals) {
                         globals.set_validation_key(truncate_vec[0]);
                     } else {
                         globals.set_validation_key(&content);
-                        //println!("{:?}", globals.validation_key);
                     }
                 }
             }
         }
+        info!("[Auth] Validation key is successfully set.")
     } else {
         if !globals.disable_auth {
             panic!("Validation key must be specified if auth is not disabled");
@@ -292,10 +294,12 @@ pub fn parse_opts(globals: &mut Globals) {
     let mut options = VerificationOptions::default();
     if let Some(iss) = matches.value_of("token_issuer") {
         options.allowed_issuers = Some(HashSet::from_strings(&vec![iss]));
+        info!("[Auth] Allowed issuer: {}", iss);
     }
     if let Some(cids) = matches.value_of("client_ids") {
         let cids_vec: Vec<String> = cids.split(',').map(|x| x.to_string()).collect();
         options.allowed_audiences = Some(HashSet::from_strings(&cids_vec));
+        info!("[Auth] Allowed client ids: {:?}", cids_vec);
     }
     globals.validation_options = Some(options);
 
@@ -306,7 +310,7 @@ pub fn parse_opts(globals: &mut Globals) {
             query_plugins.add(QueryPlugin::PluginDomainOverride(DomainOverrideRule::new(
                 truncate_vec,
             )));
-            // globals.set_domain_override(truncate_vec);
+            info!("[Query plugin] Server-side domain overriding is enabled");
         }
     }
     if let Some(blocklist_path) = matches.value_of("domain_block") {
@@ -315,7 +319,7 @@ pub fn parse_opts(globals: &mut Globals) {
             query_plugins.add(QueryPlugin::PluginDomainBlock(DomainBlockRule::new(
                 truncate_vec,
             )));
-            // globals.set_domain_block(truncate_vec);
+            info!("[Query plugin] Server-side domain blocking is enabled");
         }
     }
 
@@ -342,7 +346,7 @@ pub fn parse_opts(globals: &mut Globals) {
         if let Some(public_address) = matches.value_of("public_address") {
             builder = builder.with_address(public_address.to_string());
         }
-        println!(
+        info!(
             "Test DNS stamp to reach [{}] over DoH: [{}]\n",
             hostname,
             builder.serialize().unwrap()
@@ -350,14 +354,14 @@ pub fn parse_opts(globals: &mut Globals) {
 
         let builder =
             dnsstamps::ODoHTargetBuilder::new(hostname.to_string(), globals.path.to_string());
-        println!(
+        info!(
             "Test DNS stamp to reach [{}] over Oblivious DoH: [{}]\n",
             hostname,
             builder.serialize().unwrap()
         );
 
-        println!("Check out https://dnscrypt.info/stamps/ to compute the actual stamps.\n")
+        info!("Check out https://dnscrypt.info/stamps/ to compute the actual stamps.\n")
     } else {
-        println!("Please provide a fully qualified hostname (-H <hostname> command-line option) to get test DNS stamps for your server.\n");
+        info!("Please provide a fully qualified hostname (-H <hostname> command-line option) to get test DNS stamps for your server.\n");
     }
 }
