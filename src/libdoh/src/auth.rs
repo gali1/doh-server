@@ -12,7 +12,6 @@ curl -i -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJzdWIiO
 
 use crate::globals::*;
 use hyper::{Body, Response, StatusCode};
-// use jsonwebtoken::{decode, decode_header, DecodingKey, Validation};
 use log::{debug, error, info, warn};
 use serde_json;
 
@@ -50,30 +49,6 @@ pub fn authenticate(globals: &Globals, headers: &hyper::HeaderMap) -> Result<(),
 fn verify_jwt(globals: &Globals, jwt: &str) -> Result<(), StatusCode> {
   debug!("auth::verify_jwt {:?}", jwt);
 
-  // let vk_str = match globals.validation_key.as_ref() {
-  //   Some(v) => v,
-  //   None => {
-  //     error!("Invalid configuration");
-  //     return Err(StatusCode::FORBIDDEN);
-  //   }
-  // };
-  // TODO: Key loading should be stored in global. waste of resource.
-  // let decoding_key = match globals.get_type() {
-  //   Some(AlgorithmType::HMAC) => DecodingKey::from_secret(vk_str.as_ref()),
-  //   Some(AlgorithmType::EC) => {
-  //     let ec_key_bytes = vk_str.as_bytes();
-  //     DecodingKey::from_ec_pem(ec_key_bytes).unwrap()
-  //   }
-  //   Some(AlgorithmType::RSA) => {
-  //     let rsa_key_bytes = vk_str.as_bytes();
-  //     DecodingKey::from_rsa_pem(rsa_key_bytes).unwrap()
-  //   }
-  //   _ => {
-  //     // Assert to global has validation_algorithm
-  //     error!("Invalid configuration");
-  //     return Err(StatusCode::FORBIDDEN);
-  //   }
-  // };
   // TODO: experimental
   let pk = match &globals.validation_key {
     Some(pk) => pk,
@@ -82,7 +57,7 @@ fn verify_jwt(globals: &Globals, jwt: &str) -> Result<(), StatusCode> {
       return Err(StatusCode::FORBIDDEN);
     }
   };
-  let clm = pk.verify_token(jwt);
+  let clm = pk.verify_token(jwt, globals);
   match clm {
     Ok(c) => {
       debug!("Valid token {:?}", serde_json::to_string(&c));
@@ -93,18 +68,4 @@ fn verify_jwt(globals: &Globals, jwt: &str) -> Result<(), StatusCode> {
       return Err(StatusCode::FORBIDDEN);
     }
   }
-  //
-
-  // let verified = decode::<serde_json::Value>(
-  //   &jwt,
-  //   &decoding_key,
-  //   &Validation::new(globals.validation_algorithm.unwrap()),
-  // );
-  // if let Ok(_) = verified {
-  //   info!("Valid token: {:?}", verified);
-  //   Ok(())
-  // } else {
-  //   error!("Invalid token");
-  //   Err(StatusCode::FORBIDDEN)
-  // }
 }

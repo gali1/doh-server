@@ -56,6 +56,8 @@ fn main() {
         disable_auth: false,
         validation_key: None,
         validation_algorithm: None,
+        allowed_client_ids: None,
+        token_issuer: None,
         domain_block: None,
         domain_override: None,
         query_plugins: None,

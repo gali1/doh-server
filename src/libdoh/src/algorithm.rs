@@ -1,4 +1,5 @@
-// use jsonwebtoken::Algorithm;
+use crate::globals::Globals;
+use anyhow::{anyhow, Error};
 use jwt_simple::prelude::*;
 use p256::elliptic_curve::sec1::ToEncodedPoint;
 use std::str::FromStr;
@@ -11,8 +12,8 @@ pub enum Algorithm {
   HS512,
 }
 impl FromStr for Algorithm {
-  type Err = Box<dyn std::error::Error>;
-  fn from_str(s: &str) -> Result<Self, Box<dyn std::error::Error>> {
+  type Err = Error;
+  fn from_str(s: &str) -> Result<Self, Error> {
     match s {
       "HS256" => Ok(Algorithm::HS256),
       "HS384" => Ok(Algorithm::HS384),
@@ -25,7 +26,7 @@ impl FromStr for Algorithm {
       // "PS384" => Ok(Algorithm::PS384),
       // "PS512" => Ok(Algorithm::PS512),
       // "RS512" => Ok(Algorithm::RS512),
-      _ => Err("Invalid Algorithm Name")?,
+      _ => Err(anyhow!("Invalid Algorithm Name")),
     }
   }
 }
@@ -38,10 +39,7 @@ pub enum JwtValidationKey {
 }
 
 impl JwtValidationKey {
-  pub fn new(
-    validation_algorithm: &Algorithm,
-    key_str: &str,
-  ) -> Result<Self, Box<dyn std::error::Error>> {
+  pub fn new(validation_algorithm: &Algorithm, key_str: &str) -> Result<Self, Error> {
     let validation_key = match validation_algorithm {
       Algorithm::HS256 => JwtValidationKey::HS256(HS256Key::from_bytes(key_str.as_ref())),
       Algorithm::HS384 => JwtValidationKey::HS384(HS384Key::from_bytes(key_str.as_ref())),
@@ -60,17 +58,27 @@ impl JwtValidationKey {
   pub fn verify_token(
     &self,
     jwt: &str,
-  ) -> Result<jwt_simple::claims::JWTClaims<NoCustomClaims>, Box<dyn std::error::Error>> {
+    globals: &Globals,
+  ) -> Result<jwt_simple::claims::JWTClaims<NoCustomClaims>, Error> {
+    // Treat a given token as ID token
+    // Check audience and issuer if they are set when start
+    let mut options = VerificationOptions::default();
+    if let Some(allowed) = &globals.allowed_client_ids {
+      options.allowed_audiences = Some(HashSet::from_strings(&allowed));
+    }
+    if let Some(token_issuer) = &globals.token_issuer {
+      options.allowed_issuers = Some(HashSet::from_strings(&vec![token_issuer]));
+    }
     let clm = match self {
-      JwtValidationKey::ES256(pk) => pk.verify_token::<NoCustomClaims>(jwt, None),
-      JwtValidationKey::HS256(k) => k.verify_token::<NoCustomClaims>(jwt, None),
-      JwtValidationKey::HS384(k) => k.verify_token::<NoCustomClaims>(jwt, None),
-      JwtValidationKey::HS512(k) => k.verify_token::<NoCustomClaims>(jwt, None),
+      JwtValidationKey::ES256(pk) => pk.verify_token::<NoCustomClaims>(jwt, Some(options)),
+      JwtValidationKey::HS256(k) => k.verify_token::<NoCustomClaims>(jwt, Some(options)),
+      JwtValidationKey::HS384(k) => k.verify_token::<NoCustomClaims>(jwt, Some(options)),
+      JwtValidationKey::HS512(k) => k.verify_token::<NoCustomClaims>(jwt, Some(options)),
       // _ => Err("Unsupported Algorithm")?,
     };
     match clm {
       Ok(c) => Ok(c),
-      Err(e) => Err(e)?,
+      Err(e) => Err(e),
     }
   }
 }

@@ -7,5 +7,4 @@ Cargo.lock
 
 .private/
 .env
-.env.letsencrypt
-doh01.typeq.org*
+.vscode/

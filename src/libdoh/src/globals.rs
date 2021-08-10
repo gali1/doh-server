@@ -43,6 +43,8 @@ pub struct Globals {
     pub disable_auth: bool,
     pub validation_key: Option<JwtValidationKey>,
     pub validation_algorithm: Option<Algorithm>,
+    pub allowed_client_ids: Option<Vec<String>>,
+    pub token_issuer: Option<String>,
     pub domain_block: Option<DomainBlockRule>,
     pub domain_override: Option<DomainOverrideRule>,
     pub query_plugins: Option<AppliedQueryPlugins>,
