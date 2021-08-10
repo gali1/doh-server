@@ -1,12 +1,9 @@
 use crate::algorithm::*;
-use crate::constants::*;
 use crate::odoh::ODoHRotator;
 use crate::plugin::AppliedQueryPlugins;
 use crate::plugin_block_domains::DomainBlockRule;
-use crate::plugin_override_domains::{DomainOverrideRule, MapsTo};
-use log::{debug, error, info, warn};
-use regex::Regex;
-use std::collections::{HashMap, HashSet};
+use crate::plugin_override_domains::DomainOverrideRule;
+use jwt_simple::prelude::*;
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -43,8 +40,7 @@ pub struct Globals {
     pub disable_auth: bool,
     pub validation_key: Option<JwtValidationKey>,
     pub validation_algorithm: Option<Algorithm>,
-    pub allowed_client_ids: Option<Vec<String>>,
-    pub token_issuer: Option<String>,
+    pub validation_options: Option<VerificationOptions>,
     pub domain_block: Option<DomainBlockRule>,
     pub domain_override: Option<DomainOverrideRule>,
     pub query_plugins: Option<AppliedQueryPlugins>,

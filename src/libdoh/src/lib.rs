@@ -1,6 +1,5 @@
-mod auth;
-// mod auth_claims;
 mod algorithm;
+mod auth;
 mod constants;
 pub mod dns;
 mod errors;
@@ -34,6 +33,7 @@ use tokio::net::{TcpListener, TcpSocket, UdpSocket};
 use tokio::runtime;
 
 pub mod reexports {
+    pub use jwt_simple;
     pub use tokio;
 }
 
@@ -126,39 +126,57 @@ impl hyper::service::Service<http::Request<Body>> for DoH {
 impl DoH {
     // Added Authentication by Authorization header
     async fn serve_get(&self, req: Request<Body>) -> Result<Response<Body>, http::Error> {
+        let mut subscriber = None;
         if !self.globals.disable_auth {
             let headers = req.headers();
             let auth_response = auth::authenticate(&self.globals, &headers);
-            if let Err(e) = auth_response {
-                error!("{:?}", e);
-                return Ok(e);
-            }
+            subscriber = match auth_response {
+                Ok((sub, aud)) => {
+                    debug!("Valid token: sub={:?}, aud={:?}", &sub, &aud);
+                    sub
+                }
+                Err(e) => {
+                    error!("{:?}", e);
+                    return Ok(e);
+                }
+            };
         }
         match Self::parse_content_type(&req) {
-            Ok(DoHType::Standard) => self.serve_doh_get(req).await,
+            Ok(DoHType::Standard) => self.serve_doh_get(req, subscriber).await,
             Ok(DoHType::Oblivious) => self.serve_odoh_get(req).await,
             Err(response) => Ok(response),
         }
     }
 
     async fn serve_post(&self, req: Request<Body>) -> Result<Response<Body>, http::Error> {
+        let mut subscriber = None;
         if !self.globals.disable_auth {
             let headers = req.headers();
             let auth_response = auth::authenticate(&self.globals, &headers);
-            if let Err(e) = auth_response {
-                error!("{:?}", e);
-                return Ok(e);
-            }
+            subscriber = match auth_response {
+                Ok((sub, aud)) => {
+                    debug!("Valid token: sub={:?}, aud={:?}", &sub, &aud);
+                    sub
+                }
+                Err(e) => {
+                    error!("{:?}", e);
+                    return Ok(e);
+                }
+            };
         }
         match Self::parse_content_type(&req) {
-            Ok(DoHType::Standard) => self.serve_doh_post(req).await,
+            Ok(DoHType::Standard) => self.serve_doh_post(req, subscriber).await,
             Ok(DoHType::Oblivious) => self.serve_odoh_post(req).await,
             Err(response) => Ok(response),
         }
     }
 
-    async fn serve_doh_query(&self, query: Vec<u8>) -> Result<Response<Body>, http::Error> {
-        let resp = match self.proxy(query).await {
+    async fn serve_doh_query(
+        &self,
+        query: Vec<u8>,
+        subscriber: Option<String>,
+    ) -> Result<Response<Body>, http::Error> {
+        let resp = match self.proxy(query, subscriber).await {
             Ok(resp) => self.build_response(resp.packet, resp.ttl, DoHType::Standard.as_str()),
             Err(e) => return http_error(StatusCode::from(e)),
         };
@@ -193,15 +211,23 @@ impl DoH {
         Some(query)
     }
 
-    async fn serve_doh_get(&self, req: Request<Body>) -> Result<Response<Body>, http::Error> {
+    async fn serve_doh_get(
+        &self,
+        req: Request<Body>,
+        subscriber: Option<String>,
+    ) -> Result<Response<Body>, http::Error> {
         let query = match self.query_from_query_string(req) {
             Some(query) => query,
             _ => return http_error(StatusCode::BAD_REQUEST),
         };
-        self.serve_doh_query(query).await
+        self.serve_doh_query(query, subscriber).await
     }
 
-    async fn serve_doh_post(&self, req: Request<Body>) -> Result<Response<Body>, http::Error> {
+    async fn serve_doh_post(
+        &self,
+        req: Request<Body>,
+        subscriber: Option<String>,
+    ) -> Result<Response<Body>, http::Error> {
         if self.globals.disable_post {
             return http_error(StatusCode::METHOD_NOT_ALLOWED);
         }
@@ -209,7 +235,7 @@ impl DoH {
             Ok(q) => q,
             Err(e) => return http_error(StatusCode::from(e)),
         };
-        self.serve_doh_query(query).await
+        self.serve_doh_query(query, subscriber).await
     }
 
     async fn serve_odoh(&self, encrypted_query: Vec<u8>) -> Result<Response<Body>, http::Error> {
@@ -218,7 +244,7 @@ impl DoH {
             Ok((q, context)) => (q.to_vec(), context),
             Err(e) => return http_error(StatusCode::from(e)),
         };
-        let resp = match self.proxy(query).await {
+        let resp = match self.proxy(query, None).await {
             Ok(resp) => resp,
             Err(e) => return http_error(StatusCode::from(e)),
         };
@@ -350,13 +376,21 @@ impl DoH {
         Ok(query)
     }
 
-    async fn proxy(&self, query: Vec<u8>) -> Result<DnsResponse, DoHError> {
+    async fn proxy(
+        &self,
+        query: Vec<u8>,
+        subscriber: Option<String>,
+    ) -> Result<DnsResponse, DoHError> {
         let proxy_timeout = self.globals.timeout;
-        let timeout_res = tokio::time::timeout(proxy_timeout, self._proxy(query)).await;
+        let timeout_res = tokio::time::timeout(proxy_timeout, self._proxy(query, subscriber)).await;
         timeout_res.map_err(|_| DoHError::UpstreamTimeout)?
     }
 
-    async fn _proxy(&self, mut query: Vec<u8>) -> Result<DnsResponse, DoHError> {
+    async fn _proxy(
+        &self,
+        mut query: Vec<u8>,
+        subscriber: Option<String>,
+    ) -> Result<DnsResponse, DoHError> {
         if query.len() < MIN_DNS_PACKET_LEN {
             return Err(DoHError::Incomplete);
         }
@@ -379,7 +413,11 @@ impl DoH {
 
             ////////////////////////////////////////////////////////
             // TODO: ログるならこれを出すという別オプションにした方が良さそう
-            info!("Query: {}", q_key.clone().key_string());
+            info!(
+                "Sub: {}, Query: {}",
+                subscriber.unwrap_or("none".to_string()),
+                q_key.clone().key_string()
+            );
             if let Some(query_plugins) = globals.query_plugins.clone() {
                 let execution_result = query_plugins.execute(&dns_msg, q_key, min_ttl)?;
                 match execution_result.action {

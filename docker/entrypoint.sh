@@ -13,5 +13,7 @@ echo "doh-proxy: upstream dns server address: ${UPSTREAM_ADDR}:${UPSTREAM_PORT}"
   --path=/dns-query \
   --validation-algorithm=${VALIDATION_ALGORITHM} \
   --validation-key-path=/opt/doh-proxy/etc/public_key.pem \
+  --token-issuer=${TOKEN_ISSUER} \
+  --client-ids=${CLIENT_IDS} \
   --domain-block-rule=/opt/doh-proxy/etc/block.txt \
   --domain-override-rule=/opt/doh-proxy/etc/override.txt

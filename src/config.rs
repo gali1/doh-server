@@ -1,11 +1,11 @@
+use crate::constants::*;
+use clap::{Arg, ArgGroup};
 use libdoh::plugin::{AppliedQueryPlugins, QueryPlugin};
 use libdoh::plugin_block_domains::DomainBlockRule;
 use libdoh::plugin_override_domains::DomainOverrideRule;
+use libdoh::reexports::jwt_simple::prelude::*;
 use libdoh::*;
-
-use crate::constants::*;
-
-use clap::{Arg, ArgGroup};
+use std::collections::HashSet;
 use std::fs;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6, ToSocketAddrs};
 use std::time::Duration;
@@ -14,7 +14,7 @@ use std::time::Duration;
 use std::path::PathBuf;
 
 pub fn parse_opts(globals: &mut Globals) {
-    use crate::utils::{verify_remote_server, verify_sock_addr};
+    use crate::utils::{verify_remote_server, verify_sock_addr, verify_url};
 
     let max_clients = MAX_CLIENTS.to_string();
     let timeout_sec = TIMEOUT_SEC.to_string();
@@ -137,7 +137,7 @@ pub fn parse_opts(globals: &mut Globals) {
             Arg::with_name("allow_odoh_post")
                 .short("O")
                 .long("allow-odoh-post")
-                .help("Allow POST queries over ODoH even if they have been disabed for DoH"),
+                .help("Allow POST queries over ODoH even if they have been disabled for DoH"),
         )
         .arg(
             Arg::with_name("disable_auth")
@@ -160,7 +160,7 @@ pub fn parse_opts(globals: &mut Globals) {
                 .help("Validation key file path like \"./public_key.pem\""),
         )
         .groups(&[
-            ArgGroup::with_name("validation").args(&["validation_key_path", "validation_key_path"])
+            ArgGroup::with_name("validation").args(&["validation_key", "validation_key_path"])
         ])
         .arg(
             Arg::with_name("validation_algorithm")
@@ -169,6 +169,25 @@ pub fn parse_opts(globals: &mut Globals) {
                 .takes_value(true)
                 .default_value(VALIDATION_ALGORITHM)
                 .help("Signing algorithm: HS256|ES256"),
+        )
+        .arg(
+            Arg::with_name("token_issuer")
+                .short("I")
+                .long("token-issuer")
+                .validator(verify_url)
+                .takes_value(true)
+                .help(
+                    "Allowed issuer of Id token specified as URL like \"https://example.com/issue\"",
+                ),
+        )
+        .arg(
+            Arg::with_name("client_ids")
+                .short("J")
+                .long("client-ids")
+                .takes_value(true)
+                .help(
+                    "Allowed client ids of Id token, separated with comma like \"id_a,id_b\"",
+                ),
         )
         .arg(
             Arg::with_name("domain_block")
@@ -267,6 +286,18 @@ pub fn parse_opts(globals: &mut Globals) {
             panic!("Validation key must be specified if auth is not disabled");
         }
     }
+
+    // Treat a given token as ID token
+    // Check audience and issuer if they are set when start
+    let mut options = VerificationOptions::default();
+    if let Some(iss) = matches.value_of("token_issuer") {
+        options.allowed_issuers = Some(HashSet::from_strings(&vec![iss]));
+    }
+    if let Some(cids) = matches.value_of("client_ids") {
+        let cids_vec: Vec<String> = cids.split(',').map(|x| x.to_string()).collect();
+        options.allowed_audiences = Some(HashSet::from_strings(&cids_vec));
+    }
+    globals.validation_options = Some(options);
 
     let mut query_plugins = AppliedQueryPlugins::new();
     if let Some(override_list_path) = matches.value_of("domain_override") {

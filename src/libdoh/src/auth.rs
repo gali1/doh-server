@@ -12,10 +12,15 @@ curl -i -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJzdWIiO
 
 use crate::globals::*;
 use hyper::{Body, Response, StatusCode};
+use jwt_simple::prelude::{JWTClaims, NoCustomClaims};
 use log::{debug, error, info, warn};
-use serde_json;
+use std::collections::HashSet;
+// use serde_json;
 
-pub fn authenticate(globals: &Globals, headers: &hyper::HeaderMap) -> Result<(), Response<Body>> {
+pub fn authenticate(
+  globals: &Globals,
+  headers: &hyper::HeaderMap,
+) -> Result<(Option<String>, Option<HashSet<String>>), Response<Body>> {
   debug!("auth::authenticate, {:?}", headers);
 
   let headers_map = headers.get(hyper::header::AUTHORIZATION);
@@ -39,17 +44,22 @@ pub fn authenticate(globals: &Globals, headers: &hyper::HeaderMap) -> Result<(),
       }
     }
   };
-  if let Err(e) = res {
-    Err(Response::builder().status(e).body(Body::empty()).unwrap())
-  } else {
-    Ok(())
+  match res {
+    Err(e) => Err(Response::builder().status(e).body(Body::empty()).unwrap()),
+    Ok(clm) => {
+      let aud = if let Some(a) = clm.audiences {
+        Some(a.into_set())
+      } else {
+        None
+      };
+      Ok((clm.subject, aud))
+    }
   }
 }
 
-fn verify_jwt(globals: &Globals, jwt: &str) -> Result<(), StatusCode> {
+fn verify_jwt(globals: &Globals, jwt: &str) -> Result<JWTClaims<NoCustomClaims>, StatusCode> {
   debug!("auth::verify_jwt {:?}", jwt);
 
-  // TODO: experimental
   let pk = match &globals.validation_key {
     Some(pk) => pk,
     None => {
@@ -58,13 +68,14 @@ fn verify_jwt(globals: &Globals, jwt: &str) -> Result<(), StatusCode> {
     }
   };
   let clm = pk.verify_token(jwt, globals);
+  // TODO: check sub?
+  // I think it is not needed provided token expiration (short-term) is properly handled.
   match clm {
     Ok(c) => {
-      debug!("Valid token {:?}", serde_json::to_string(&c));
-      return Ok(());
+      return Ok(c);
     }
     Err(e) => {
-      error!("Invalid token: {:?}", e);
+      warn!("Invalid token: {:?}", e);
       return Err(StatusCode::FORBIDDEN);
     }
   }

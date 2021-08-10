@@ -62,18 +62,12 @@ impl JwtValidationKey {
   ) -> Result<jwt_simple::claims::JWTClaims<NoCustomClaims>, Error> {
     // Treat a given token as ID token
     // Check audience and issuer if they are set when start
-    let mut options = VerificationOptions::default();
-    if let Some(allowed) = &globals.allowed_client_ids {
-      options.allowed_audiences = Some(HashSet::from_strings(&allowed));
-    }
-    if let Some(token_issuer) = &globals.token_issuer {
-      options.allowed_issuers = Some(HashSet::from_strings(&vec![token_issuer]));
-    }
+    let options = globals.validation_options.clone();
     let clm = match self {
-      JwtValidationKey::ES256(pk) => pk.verify_token::<NoCustomClaims>(jwt, Some(options)),
-      JwtValidationKey::HS256(k) => k.verify_token::<NoCustomClaims>(jwt, Some(options)),
-      JwtValidationKey::HS384(k) => k.verify_token::<NoCustomClaims>(jwt, Some(options)),
-      JwtValidationKey::HS512(k) => k.verify_token::<NoCustomClaims>(jwt, Some(options)),
+      JwtValidationKey::ES256(pk) => pk.verify_token::<NoCustomClaims>(jwt, options),
+      JwtValidationKey::HS256(k) => k.verify_token::<NoCustomClaims>(jwt, options),
+      JwtValidationKey::HS384(k) => k.verify_token::<NoCustomClaims>(jwt, options),
+      JwtValidationKey::HS512(k) => k.verify_token::<NoCustomClaims>(jwt, options),
       // _ => Err("Unsupported Algorithm")?,
     };
     match clm {
