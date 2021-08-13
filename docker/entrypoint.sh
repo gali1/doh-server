@@ -1,5 +1,4 @@
-| \
-  #!/usr/bin/env bash
+| #!/usr/bin/env bash
   LOG_FILE=/var/log/doh-proxy/doh-proxy.log
 
-  bash /doh-proxy.sh | tee $LOG_FILE
+  /doh-proxy.sh | tee $LOG_FILE
