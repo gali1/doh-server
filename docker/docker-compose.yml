@@ -10,6 +10,10 @@ services:
     ports:
       - 3000:3000/udp
       - 3000:3000/tcp
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
     volumes:
       - ./.env:/opt/doh-proxy/etc/.env
       - ${VALIDATION_KEY_PATH}:/opt/doh-proxy/etc/public_key.pem
