@@ -15,7 +15,7 @@ services:
       - ${VALIDATION_KEY_PATH}:/opt/doh-proxy/etc/public_key.pem
       - ${DOMAIN_BLOCK_RULE}:/opt/doh-proxy/etc/block.txt
       - ${DOMAIN_OVERRIDE_RULE}:/opt/doh-proxy/etc/override.txt
-      - ${LOG_FILE}:/var/log/doh-proxy/doh-proxy.log
+      - ${LOG_DIR}:/var/log/doh-proxy
     networks:
       net-front:
 
