@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-LOG_FILE=/var/doh-proxy/doh-proxy.log
+LOG_FILE=/var/log/doh-proxy/doh-proxy.log
 LOG_SIZE=10M
 LOG_NUM=10
 
