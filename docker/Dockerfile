@@ -32,6 +32,7 @@ RUN apt-get update && apt-get install -qy --no-install-recommends $BUILD_DEPS &&
     rm -fr ~/.cargo ~/.rustup && \
     rm -fr /tmp/* /var/tmp/* /var/cache/apt/* /var/lib/apt/lists/* /var/log/apt/* /var/log/*.log
 
+COPY doh-proxy.sh /
 COPY entrypoint.sh /
 
 RUN chmod 755 /entrypoint.sh
