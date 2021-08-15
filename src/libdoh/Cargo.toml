@@ -23,9 +23,9 @@ bytes = "1.0.1"
 futures = "0.3.16"
 hpke = "0.6.0"
 hyper = { version="0.14.11", default-features=false, features=["server", "http1", "http2", "stream"] }
-odoh-rs = "1.0.0-alpha"
+odoh-rs = "1.0.0-alpha.1"
 rand = "0.8.4"
-tokio = { version="1.9.0", features=["net", "rt-multi-thread", "parking_lot", "time", "sync"] }
+tokio = { version = "1.10.0", features = ["net", "rt-multi-thread", "parking_lot", "time", "sync"] }
 tokio-rustls = { version="0.22.0", features=["early-data"], optional=true }
 serde_json = "1.0.66"
 env_logger = "0.9.0"
