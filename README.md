@@ -2,6 +2,7 @@
 
 This repo is a fork of `doh-proxy`. This forked version has the following functions in addition to ones of original version.
 
+- Proxy function of Oblivious DNS over HTTPS in addition to the Target (Server) function
 - access control by HTTP Authorization header with bearer token
 - server-side blocking by query names (currently returns NXDOMAIN, and supports exact match, suffix match, and prefix match)
 - server-side overriding query names with specific IP addresses
