@@ -5,7 +5,7 @@ SHELL ["/bin/sh", "-x", "-c"]
 ENV SERIAL 2
 
 ENV CFLAGS=-Ofast
-ENV BUILD_DEPS   curl make build-essential git libevent-dev libexpat1-dev autoconf file libssl-dev byacc
+ENV BUILD_DEPS   curl make build-essential git libevent-dev libexpat1-dev autoconf file libssl-dev byacc pkg-config
 ENV RUNTIME_DEPS bash util-linux coreutils findutils grep libssl1.1 ldnsutils libevent-2.1 expat ca-certificates runit runit-helper jed logrotate
 
 RUN apt-get update; apt-get -qy dist-upgrade; apt-get -qy clean && \
