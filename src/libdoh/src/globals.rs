@@ -3,6 +3,7 @@ use crate::odoh::ODoHRotator;
 use crate::plugin::AppliedQueryPlugins;
 use crate::plugin_block_domains::DomainBlockRule;
 use crate::plugin_override_domains::DomainOverrideRule;
+use crate::HttpProxyClient;
 use jwt_simple::prelude::*;
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -27,6 +28,7 @@ pub struct Globals {
     pub local_bind_address: SocketAddr,
     pub server_address: SocketAddr,
     pub path: String,
+    pub odoh_proxy_path: String,
     pub max_clients: usize,
     pub timeout: Duration,
     pub clients_count: ClientsCount,
@@ -47,6 +49,7 @@ pub struct Globals {
     pub requires_dns_message_parsing: bool,
     pub odoh_configs_path: String,
     pub odoh_rotator: Arc<ODoHRotator>,
+    pub odoh_proxy: HttpProxyClient,
 
     pub runtime_handle: runtime::Handle,
 }

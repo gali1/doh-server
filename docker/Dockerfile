@@ -36,6 +36,7 @@ COPY doh-proxy.sh /
 COPY entrypoint.sh /
 
 RUN chmod 755 /doh-proxy.sh
+
 RUN chmod 755 /entrypoint.sh
 
 EXPOSE 3000/udp 3000/tcp
