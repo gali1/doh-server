@@ -347,6 +347,8 @@ pub fn parse_opts(globals: &mut Globals) {
 
     globals.odoh_proxy = libdoh::odoh_proxy::ODoHProxy::new(globals.timeout).unwrap();
 
+    globals.odoh_proxy = libdoh::odoh_proxy::ODoHProxy::new(globals.timeout).unwrap();
+
     #[cfg(feature = "tls")]
     {
         globals.tls_cert_path = matches.value_of("tls_cert_path").map(PathBuf::from);
@@ -371,7 +373,15 @@ pub fn parse_opts(globals: &mut Globals) {
         let builder =
             dnsstamps::ODoHTargetBuilder::new(hostname.to_string(), globals.path.to_string());
         info!(
-            "Test DNS stamp to reach [{}] over Oblivious DoH: [{}]\n",
+            "Test DNS stamp to reach [{}] over Oblivious DoH Target: [{}]\n",
+            hostname,
+            builder.serialize().unwrap()
+        );
+
+        let builder =
+            dnsstamps::ODoHRelayBuilder::new(hostname.to_string(), globals.odoh_proxy_path.to_string());
+        info!(
+            "Test DNS stamp to reach [{}] over Oblivious DoH Proxy: [{}]\n",
             hostname,
             builder.serialize().unwrap()
         );
