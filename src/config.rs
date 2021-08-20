@@ -273,9 +273,11 @@ pub fn parse_opts(globals: &mut Globals) {
     globals.allow_odoh_post = matches.is_present("allow_odoh_post");
     globals.disable_auth = matches.is_present("disable_auth");
 
-    if let Some(a) = matches.value_of("validation_algorithm") {
-        info!("[Auth] Authentication is enabled: {:?}", &a);
-        globals.set_validation_algorithm(a);
+    if !globals.disable_auth {
+        if let Some(a) = matches.value_of("validation_algorithm") {
+            info!("[Auth] Authentication is enabled: {:?}", &a);
+            globals.set_validation_algorithm(a);
+        }
     }
 
     if matches.is_present("validation") {
@@ -343,7 +345,7 @@ pub fn parse_opts(globals: &mut Globals) {
         globals.requires_dns_message_parsing = true;
     }
 
-    globals.odoh_proxy = libdoh::http_proxy::HttpProxyClient::new(globals.timeout).unwrap();
+    globals.odoh_proxy = libdoh::odoh_proxy::ODoHProxy::new(globals.timeout).unwrap();
 
     #[cfg(feature = "tls")]
     {
