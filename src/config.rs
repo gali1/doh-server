@@ -349,6 +349,8 @@ pub fn parse_opts(globals: &mut Globals) {
 
     globals.odoh_proxy = libdoh::odoh_proxy::ODoHProxy::new(globals.timeout).unwrap();
 
+    globals.odoh_proxy = libdoh::odoh_proxy::ODoHProxy::new(globals.timeout).unwrap();
+
     #[cfg(feature = "tls")]
     {
         globals.tls_cert_path = matches.value_of("tls_cert_path").map(PathBuf::from);
