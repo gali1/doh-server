@@ -3,24 +3,21 @@ use hyper::http::StatusCode;
 use reqwest::header;
 
 #[derive(Debug, Clone)]
-pub enum ProxyMethod {
-  GET,
-  POST,
-}
-
-#[derive(Debug, Clone)]
-pub struct HttpProxyClient {
+pub struct ODoHProxy {
   client: reqwest::Client,
-  method: ProxyMethod,
 }
 
-impl HttpProxyClient {
+impl ODoHProxy {
   pub fn new(timeout: std::time::Duration) -> Result<Self, DoHError> {
     // build client
     let mut headers = header::HeaderMap::new();
     let ct = "application/oblivious-dns-message";
     headers.insert("Accept", header::HeaderValue::from_str(&ct).unwrap());
     headers.insert("Content-Type", header::HeaderValue::from_str(&ct).unwrap());
+    headers.insert(
+      "Cache-Control",
+      header::HeaderValue::from_str("no-cache, no-store").unwrap(),
+    );
 
     let client = reqwest::Client::builder()
       .user_agent(format!("odoh-proxy/{}", env!("CARGO_PKG_VERSION")))
@@ -30,10 +27,7 @@ impl HttpProxyClient {
       .build()
       .map_err(|e| DoHError::Reqwest(e))?;
 
-    Ok(HttpProxyClient {
-      client,
-      method: ProxyMethod::POST, // TODO: GET対応
-    })
+    Ok(ODoHProxy { client })
   }
 
   pub async fn forward_to_target(
@@ -41,7 +35,7 @@ impl HttpProxyClient {
     encrypted_query: &Vec<u8>,
     target_uri: &str,
   ) -> Result<Vec<u8>, StatusCode> {
-    // TODO: GET対応
+    // Only post method is allowed in ODoH
     let response = self
       .client
       .post(target_uri)

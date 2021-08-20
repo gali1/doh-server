@@ -203,7 +203,7 @@ pub fn parse_opts(globals: &mut Globals) {
     globals.disable_post = matches.is_present("disable_post");
     globals.allow_odoh_post = matches.is_present("allow_odoh_post");
 
-    globals.odoh_proxy = libdoh::http_proxy::HttpProxyClient::new(globals.timeout).unwrap();
+    globals.odoh_proxy = libdoh::odoh_proxy::ODoHProxy::new(globals.timeout).unwrap();
 
     #[cfg(feature = "tls")]
     {

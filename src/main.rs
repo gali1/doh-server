@@ -13,7 +13,7 @@ use libdoh::*;
 use crate::config::*;
 use crate::constants::*;
 
-use libdoh::http_proxy::HttpProxyClient;
+use libdoh::odoh_proxy::ODoHProxy;
 use libdoh::odoh::ODoHRotator;
 use libdoh::reexports::tokio;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -54,7 +54,7 @@ fn main() {
         allow_odoh_post: false,
         odoh_configs_path: ODOH_CONFIGS_PATH.to_string(),
         odoh_rotator: Arc::new(rotator),
-        odoh_proxy: HttpProxyClient::new(Duration::from_secs(TIMEOUT_SEC)).unwrap(),
+        odoh_proxy: ODoHProxy::new(Duration::from_secs(TIMEOUT_SEC)).unwrap(),
 
         runtime_handle: runtime.handle().clone(),
     };

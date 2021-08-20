@@ -1,5 +1,5 @@
 use crate::odoh::ODoHRotator;
-use crate::HttpProxyClient;
+use crate::odoh_proxy::ODoHProxy;
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -34,7 +34,7 @@ pub struct Globals {
     pub allow_odoh_post: bool,
     pub odoh_configs_path: String,
     pub odoh_rotator: Arc<ODoHRotator>,
-    pub odoh_proxy: HttpProxyClient,
+    pub odoh_proxy: ODoHProxy,
 
     pub runtime_handle: runtime::Handle,
 }
