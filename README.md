@@ -2,8 +2,8 @@
 
 This repo is a fork of `doh-proxy`. This forked version has the following functions in addition to ones of original version.
 
-- Proxy function of Oblivious DNS over HTTPS in addition to the Target (Server) function
-- access control by HTTP Authorization header with bearer token
+- Proxy function of Oblivious DNS over HTTPS in addition to the target (server) function
+- access control by HTTP Authorization header with bearer token at target and proxy endpoints independently.
 - server-side blocking by query names (currently returns NXDOMAIN, and supports exact match, suffix match, and prefix match)
 - server-side overriding query names with specific IP addresses
 - (TODO:) configuration file
@@ -16,31 +16,57 @@ USAGE:
     doh-proxy [FLAGS] [OPTIONS]
 
 FLAGS:
-    -O, --allow-odoh-post      Allow POST queries over ODoH even if they have been disabed for DoH
-    -D, --disable-auth         Disable authentication using HTTP Authorization header
+    -O, --allow-odoh-post      Allow POST queries over ODoH even if they have been disabled for DoH
     -K, --disable-keepalive    Disable keepalive
     -P, --disable-post         Disable POST queries
     -h, --help                 Prints help information
-        --version              Prints version information
+    -V, --version              Prints version information
 
 OPTIONS:
-    -B, --domain-block-rule <domain_block>               Domains block rule file path like "./domains_block.txt"
-    -R, --domain-override-rule <domain_override>         Domains override rule file path like "./domains_override.txt"
-    -E, --err-ttl <err_ttl>                              TTL for errors, in seconds [default: 2]
-    -H, --hostname <hostname>                            Host name (not IP address) DoH clients will use to connect
-    -l, --listen-address <listen_address>                Address to listen to [default: 127.0.0.1:3000]
-    -b, --local-bind-address <local_bind_address>        Address to connect from
-    -c, --max-clients <max_clients>                      Maximum number of simultaneous clients [default: 512]
-    -C, --max-concurrent <max_concurrent>                Maximum number of concurrent requests per client [default: 16]
-    -X, --max-ttl <max_ttl>                              Maximum TTL, in seconds [default: 604800]
-    -T, --min-ttl <min_ttl>                              Minimum TTL, in seconds [default: 10]
-    -p, --path <path>                                    URI path [default: /dns-query]
-    -g, --public-address <public_address>                External IP address DoH clients will connect to
-    -u, --server-address <server_address>                Address to connect to [default: 9.9.9.9:53]
-    -t, --timeout <timeout>                              Timeout, in seconds [default: 10]
-    -A, --validation-algorithm <validation_algorithm>    Signing algorithm: HS256|ES256 [default: HS256]
-    -V, --validation-key <validation_key>                Validation key
-    -W, --validation-key-path <validation_key_path>      Validation key file path like "./public_key.pem"
+    -j, --client-ids-proxy <client_ids_proxy>
+            Proxy allowed client ids of Id token, separated with comma like "id_a,id_b"
+
+    -J, --client-ids-target <client_ids_target>
+            Target allowed client ids of Id token, separated with comma like "id_a,id_b"
+
+    -B, --domain-block-rule <domain_block>
+            Domains block rule file path like "./domains_block.txt"
+
+    -R, --domain-override-rule <domain_override>
+            Domains override rule file path like "./domains_override.txt"
+
+    -E, --err-ttl <err_ttl>                                            TTL for errors, in seconds [default: 2]
+    -H, --hostname <hostname>
+            Host name (not IP address) DoH clients will use to connect
+
+    -l, --listen-address <listen_address>                              Address to listen to [default: 127.0.0.1:3000]
+    -b, --local-bind-address <local_bind_address>                      Address to connect from
+    -c, --max-clients <max_clients>
+            Maximum number of simultaneous clients [default: 512]
+
+    -C, --max-concurrent <max_concurrent>
+            Maximum number of concurrent requests per client [default: 16]
+
+    -X, --max-ttl <max_ttl>                                            Maximum TTL, in seconds [default: 604800]
+    -T, --min-ttl <min_ttl>                                            Minimum TTL, in seconds [default: 10]
+    -q, --odoh-proxy-path <odoh_proxy_path>                            ODoH proxy URI path [default: /proxy]
+    -p, --path <path>                                                  URI path [default: /dns-query]
+    -g, --public-address <public_address>                              External IP address DoH clients will connect to
+    -u, --server-address <server_address>                              Address to connect to [default: 9.9.9.9:53]
+    -t, --timeout <timeout>                                            Timeout, in seconds [default: 10]
+    -m, --token-issuer-proxy <token_issuer_proxy>
+            Proxy allowed issuer of Id token specified as URL like "https://example.com/issue"
+
+    -M, --token-issuer-target <token_issuer_target>
+            Target allowed issuer of Id token specified as URL like "https://example.com/issue"
+
+    -a, --validation-algorithm-proxy <validation_algorithm_proxy>      Proxy validation algorithm [default: ES256]
+    -A, --validation-algorithm-target <validation_algorithm_target>    Target validation algorithm [default: ES256]
+    -w, --validation-key-proxy <validation_key_proxy>
+            Proxy validation key file path like "./public_key.pem"
+
+    -W, --validation-key-target <validation_key_target>
+            Target validation key file path like "./public_key.pem"
 ```
 
 Below is the original README.md
