@@ -20,6 +20,7 @@ use std::collections::HashSet;
 pub fn authenticate(
   globals: &Globals,
   headers: &hyper::HeaderMap,
+  loc: ValidationLocation,
 ) -> Result<(Option<String>, Option<HashSet<String>>), Response<Body>> {
   debug!("auth::authenticate, {:?}", headers);
 
@@ -33,7 +34,7 @@ pub fn authenticate(
       if let Ok(s) = auth_header.to_str() {
         let v: Vec<&str> = s.split(" ").collect();
         if "Bearer" == v[0] && v.len() == 2 {
-          verify_jwt(globals, v[1])
+          verify_jwt(globals, v[1], loc)
         } else {
           error!("Invalid authorization header format");
           Err(StatusCode::BAD_REQUEST)
@@ -57,17 +58,25 @@ pub fn authenticate(
   }
 }
 
-fn verify_jwt(globals: &Globals, jwt: &str) -> Result<JWTClaims<NoCustomClaims>, StatusCode> {
+fn verify_jwt(
+  globals: &Globals,
+  jwt: &str,
+  loc: ValidationLocation,
+) -> Result<JWTClaims<NoCustomClaims>, StatusCode> {
   debug!("auth::verify_jwt {:?}", jwt);
+  let vk = match loc {
+    ValidationLocation::Target => &globals.validation_key_target,
+    ValidationLocation::Proxy => &globals.validation_key_proxy,
+  };
 
-  let pk = match &globals.validation_key {
+  let pk = match vk {
     Some(pk) => pk,
     None => {
       error!("Invalid configuration");
       return Err(StatusCode::FORBIDDEN);
     }
   };
-  let clm = pk.verify_token(jwt, globals);
+  let clm = pk.verify_token(jwt, globals, loc);
   // TODO: check sub?
   // I think it is not needed provided token expiration (short-term) is properly handled.
   match clm {

@@ -1,4 +1,4 @@
-use crate::globals::Globals;
+use crate::globals::{Globals, ValidationLocation};
 use anyhow::{anyhow, Error};
 use jwt_simple::prelude::*;
 use p256::elliptic_curve::sec1::ToEncodedPoint;
@@ -59,10 +59,14 @@ impl JwtValidationKey {
     &self,
     jwt: &str,
     globals: &Globals,
+    loc: ValidationLocation,
   ) -> Result<jwt_simple::claims::JWTClaims<NoCustomClaims>, Error> {
     // Treat a given token as ID token
     // Check audience and issuer if they are set when start
-    let options = globals.validation_options.clone();
+    let options = match loc {
+      ValidationLocation::Target => globals.validation_options_target.clone(),
+      ValidationLocation::Proxy => globals.validation_options_proxy.clone(),
+    };
     let clm = match self {
       JwtValidationKey::ES256(pk) => pk.verify_token::<NoCustomClaims>(jwt, options),
       JwtValidationKey::HS256(k) => k.verify_token::<NoCustomClaims>(jwt, options),
@@ -76,9 +80,3 @@ impl JwtValidationKey {
     }
   }
 }
-
-// pub enum AlgorithmType {
-//   HMAC,
-//   EC,
-//   RSA,
-// }

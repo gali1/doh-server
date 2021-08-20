@@ -109,21 +109,57 @@ impl hyper::service::Service<http::Request<Body>> for DoH {
         let globals = &self.globals;
         let self_inner = self.clone();
         if req.uri().path() == globals.path {
-            match *req.method() {
-                Method::POST => Box::pin(async move { self_inner.serve_post(req).await }),
-                Method::GET => Box::pin(async move { self_inner.serve_get(req).await }),
-                _ => Box::pin(async { http_error(StatusCode::METHOD_NOT_ALLOWED) }),
-            }
-        } else if req.uri().path() == globals.odoh_proxy_path {
-            // Draft:        https://datatracker.ietf.org/doc/html/draft-pauly-dprive-oblivious-doh-06
-            // Golang impl.: https://github.com/cloudflare/odoh-server-go
-            // Based on the draft and Golang implementation, only post method is allowed.
-            match *req.method() {
-                Method::POST => {
-                    Box::pin(async move { self_inner.serve_odoh_proxy_post(req).await })
+            Box::pin(async move {
+                let mut subscriber = None;
+                if self_inner.globals.enable_auth_target {
+                    subscriber = match auth::authenticate(
+                        &self_inner.globals,
+                        &req.headers(),
+                        ValidationLocation::Target,
+                    ) {
+                        Ok((sub, aud)) => {
+                            debug!("Valid token: sub={:?}, aud={:?}", &sub, &aud);
+                            sub
+                        }
+                        Err(e) => {
+                            error!("{:?}", e);
+                            return Ok(e);
+                        }
+                    };
                 }
-                _ => Box::pin(async { http_error(StatusCode::METHOD_NOT_ALLOWED) }),
-            }
+                match *req.method() {
+                    Method::POST => self_inner.serve_post(req, subscriber).await,
+                    Method::GET => self_inner.serve_get(req, subscriber).await,
+                    _ => http_error(StatusCode::METHOD_NOT_ALLOWED),
+                }
+            })
+        } else if req.uri().path() == globals.odoh_proxy_path {
+            Box::pin(async move {
+                let mut subscriber = None;
+                if self_inner.globals.enable_auth_proxy {
+                    subscriber = match auth::authenticate(
+                        &self_inner.globals,
+                        &req.headers(),
+                        ValidationLocation::Proxy,
+                    ) {
+                        Ok((sub, aud)) => {
+                            debug!("Valid token: sub={:?}, aud={:?}", &sub, &aud);
+                            sub
+                        }
+                        Err(e) => {
+                            error!("{:?}", e);
+                            return Ok(e);
+                        }
+                    };
+                }
+                // Draft:        https://datatracker.ietf.org/doc/html/draft-pauly-dprive-oblivious-doh-06
+                // Golang impl.: https://github.com/cloudflare/odoh-server-go
+                // Based on the draft and Golang implementation, only post method is allowed.
+                match *req.method() {
+                    Method::POST => self_inner.serve_odoh_proxy_post(req, subscriber).await,
+                    _ => http_error(StatusCode::METHOD_NOT_ALLOWED),
+                }
+            })
         } else if req.uri().path() == globals.odoh_configs_path {
             match *req.method() {
                 Method::GET => Box::pin(async move { self_inner.serve_odoh_configs().await }),
@@ -142,48 +178,26 @@ struct ParsedUriQuery {
 
 impl DoH {
     // Added Authentication by Authorization header
-    async fn serve_get(&self, req: Request<Body>) -> Result<Response<Body>, http::Error> {
-        let mut subscriber = None;
-        if !self.globals.disable_auth {
-            let headers = req.headers();
-            let auth_response = auth::authenticate(&self.globals, &headers);
-            subscriber = match auth_response {
-                Ok((sub, aud)) => {
-                    debug!("Valid token: sub={:?}, aud={:?}", &sub, &aud);
-                    sub
-                }
-                Err(e) => {
-                    error!("{:?}", e);
-                    return Ok(e);
-                }
-            };
-        }
+    async fn serve_get(
+        &self,
+        req: Request<Body>,
+        subscriber: Option<String>,
+    ) -> Result<Response<Body>, http::Error> {
         match Self::parse_content_type(&req) {
             Ok(DoHType::Standard) => self.serve_doh_get(req, subscriber).await,
-            Ok(DoHType::Oblivious) => self.serve_odoh_get(req).await,
+            Ok(DoHType::Oblivious) => self.serve_odoh_get(req, subscriber).await,
             Err(response) => Ok(response),
         }
     }
 
-    async fn serve_post(&self, req: Request<Body>) -> Result<Response<Body>, http::Error> {
-        let mut subscriber = None;
-        if !self.globals.disable_auth {
-            let headers = req.headers();
-            let auth_response = auth::authenticate(&self.globals, &headers);
-            subscriber = match auth_response {
-                Ok((sub, aud)) => {
-                    debug!("Valid token: sub={:?}, aud={:?}", &sub, &aud);
-                    sub
-                }
-                Err(e) => {
-                    error!("{:?}", e);
-                    return Ok(e);
-                }
-            };
-        }
+    async fn serve_post(
+        &self,
+        req: Request<Body>,
+        subscriber: Option<String>,
+    ) -> Result<Response<Body>, http::Error> {
         match Self::parse_content_type(&req) {
             Ok(DoHType::Standard) => self.serve_doh_post(req, subscriber).await,
-            Ok(DoHType::Oblivious) => self.serve_odoh_post(req).await,
+            Ok(DoHType::Oblivious) => self.serve_odoh_post(req, subscriber).await,
             Err(response) => Ok(response),
         }
     }
@@ -289,13 +303,17 @@ impl DoH {
         self.serve_doh_query(query, subscriber).await
     }
 
-    async fn serve_odoh(&self, encrypted_query: Vec<u8>) -> Result<Response<Body>, http::Error> {
+    async fn serve_odoh(
+        &self,
+        encrypted_query: Vec<u8>,
+        subscriber: Option<String>,
+    ) -> Result<Response<Body>, http::Error> {
         let odoh_public_key = (*self.globals.odoh_rotator).clone().current_public_key();
         let (query, context) = match (*odoh_public_key).clone().decrypt_query(encrypted_query) {
             Ok((q, context)) => (q.to_vec(), context),
             Err(e) => return http_error(StatusCode::from(e)),
         };
-        let resp = match self.proxy(query, None).await {
+        let resp = match self.proxy(query, subscriber).await {
             Ok(resp) => resp,
             Err(e) => return http_error(StatusCode::from(e)),
         };
@@ -310,7 +328,11 @@ impl DoH {
         }
     }
 
-    async fn serve_odoh_get(&self, req: Request<Body>) -> Result<Response<Body>, http::Error> {
+    async fn serve_odoh_get(
+        &self,
+        req: Request<Body>,
+        subscriber: Option<String>,
+    ) -> Result<Response<Body>, http::Error> {
         let encrypted_query = match self
             .parse_query_string(req.uri().query().unwrap_or(""))
             .dns_query
@@ -318,10 +340,14 @@ impl DoH {
             Some(encrypted_query) => encrypted_query,
             _ => return http_error(StatusCode::BAD_REQUEST),
         };
-        self.serve_odoh(encrypted_query).await
+        self.serve_odoh(encrypted_query, subscriber).await
     }
 
-    async fn serve_odoh_post(&self, req: Request<Body>) -> Result<Response<Body>, http::Error> {
+    async fn serve_odoh_post(
+        &self,
+        req: Request<Body>,
+        subscriber: Option<String>,
+    ) -> Result<Response<Body>, http::Error> {
         if self.globals.disable_post && !self.globals.allow_odoh_post {
             return http_error(StatusCode::METHOD_NOT_ALLOWED);
         }
@@ -329,13 +355,14 @@ impl DoH {
             Ok(q) => q,
             Err(e) => return http_error(StatusCode::from(e)),
         };
-        self.serve_odoh(encrypted_query).await
+        self.serve_odoh(encrypted_query, subscriber).await
     }
 
     async fn serve_odoh_proxy(
         &self,
         encrypted_query: Vec<u8>,
         target_uri: &str,
+        subscriber: Option<String>,
     ) -> Result<Response<Body>, http::Error> {
         let encrypted_response = match self
             .globals
@@ -348,7 +375,10 @@ impl DoH {
         };
 
         match encrypted_response {
-            Ok(resp) => Ok(resp),
+            Ok(resp) => {
+                info!("[Proxy] Sub: {}", subscriber.unwrap_or("none".to_string()),);
+                Ok(resp)
+            }
             Err(e) => http_error(StatusCode::from(e)),
         }
     }
@@ -356,6 +386,7 @@ impl DoH {
     async fn serve_odoh_proxy_post(
         &self,
         req: Request<Body>,
+        subscriber: Option<String>,
     ) -> Result<Response<Body>, http::Error> {
         if self.globals.disable_post && !self.globals.allow_odoh_post {
             return http_error(StatusCode::METHOD_NOT_ALLOWED);
@@ -382,14 +413,15 @@ impl DoH {
                             return http_error(StatusCode::BAD_REQUEST);
                         }
                         q
-                    },
+                    }
                     Err(e) => return http_error(StatusCode::from(e)),
                 };
 
-                self.serve_odoh_proxy(encrypted_query, &target_uri).await
-            },
+                self.serve_odoh_proxy(encrypted_query, &target_uri, subscriber)
+                    .await
+            }
             Ok(_) => http_error(StatusCode::UNSUPPORTED_MEDIA_TYPE),
-            Err(err_response) => Ok(err_response)
+            Err(err_response) => Ok(err_response),
         }
     }
 
@@ -529,7 +561,7 @@ impl DoH {
             ////////////////////////////////////////////////////////
             // TODO: ログるならこれを出すという別オプションにした方が良さそう
             info!(
-                "Sub: {}, Query: {}",
+                "[Target] Sub: {}, Query: {}",
                 subscriber.unwrap_or("none".to_string()),
                 q_key.clone().key_string()
             );
@@ -702,11 +734,23 @@ impl DoH {
                 self.globals.tls_cert_path.is_some() && self.globals.tls_cert_key_path.is_some();
         }
         if tls_enabled {
-            println!("ODoH/DoH Server: Listening on https://{}{}", listen_address, path);
-            println!("ODoH Proxy     : Listening on https://{}{}", listen_address, odoh_proxy_path);
+            println!(
+                "ODoH/DoH Server: Listening on https://{}{}",
+                listen_address, path
+            );
+            println!(
+                "ODoH Proxy     : Listening on https://{}{}",
+                listen_address, odoh_proxy_path
+            );
         } else {
-            println!("ODoH/DoH Server: Listening on http://{}{}", listen_address, path);
-            println!("ODoH Proxy     : Listening on http://{}{}", listen_address, odoh_proxy_path);
+            println!(
+                "ODoH/DoH Server: Listening on http://{}{}",
+                listen_address, path
+            );
+            println!(
+                "ODoH Proxy     : Listening on http://{}{}",
+                listen_address, odoh_proxy_path
+            );
         }
 
         let mut server = Http::new();

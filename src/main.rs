@@ -13,8 +13,8 @@ use libdoh::*;
 use crate::config::*;
 use crate::constants::*;
 
-use libdoh::odoh_proxy::ODoHProxy;
 use libdoh::odoh::ODoHRotator;
+use libdoh::odoh_proxy::ODoHProxy;
 use libdoh::reexports::tokio;
 // use std::env;
 use std::io::Write;
@@ -71,10 +71,17 @@ fn main() {
         keepalive: true,
         disable_post: false,
         allow_odoh_post: false,
-        disable_auth: false,
-        validation_key: None,
-        validation_algorithm: None,
-        validation_options: None,
+        enable_auth_target: false,
+        enable_auth_proxy: false,
+
+        validation_key_target: None,
+        validation_algorithm_target: None,
+        validation_options_target: None,
+
+        validation_key_proxy: None,
+        validation_algorithm_proxy: None,
+        validation_options_proxy: None,
+
         domain_block: None,
         domain_override: None,
         query_plugins: None,

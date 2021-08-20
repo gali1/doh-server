@@ -10,4 +10,4 @@ pub const MAX_TTL: u32 = 86400 * 7;
 pub const MIN_TTL: u32 = 10;
 pub const ERR_TTL: u32 = 2;
 
-pub const VALIDATION_ALGORITHM: &str = "HS256";
+pub const VALIDATION_ALGORITHM: &str = "ES256";

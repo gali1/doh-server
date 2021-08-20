@@ -17,6 +17,12 @@ use std::str::FromStr;
 use std::path::PathBuf;
 
 #[derive(Debug)]
+pub enum ValidationLocation {
+    Target,
+    Proxy,
+}
+
+#[derive(Debug)]
 pub struct Globals {
     #[cfg(feature = "tls")]
     pub tls_cert_path: Option<PathBuf>,
@@ -39,10 +45,19 @@ pub struct Globals {
     pub keepalive: bool,
     pub disable_post: bool,
     pub allow_odoh_post: bool,
-    pub disable_auth: bool,
-    pub validation_key: Option<JwtValidationKey>,
-    pub validation_algorithm: Option<Algorithm>,
-    pub validation_options: Option<VerificationOptions>,
+
+    // auth at target
+    pub enable_auth_target: bool,
+    pub validation_key_target: Option<JwtValidationKey>,
+    pub validation_algorithm_target: Option<Algorithm>,
+    pub validation_options_target: Option<VerificationOptions>,
+
+    // auth at proxy
+    pub enable_auth_proxy: bool,
+    pub validation_key_proxy: Option<JwtValidationKey>,
+    pub validation_algorithm_proxy: Option<Algorithm>,
+    pub validation_options_proxy: Option<VerificationOptions>,
+
     pub domain_block: Option<DomainBlockRule>,
     pub domain_override: Option<DomainOverrideRule>,
     pub query_plugins: Option<AppliedQueryPlugins>,
@@ -55,20 +70,28 @@ pub struct Globals {
 }
 
 impl Globals {
-    pub fn set_validation_algorithm(&mut self, algorithm_str: &str) {
+    pub fn set_validation_algorithm(&mut self, algorithm_str: &str, loc: ValidationLocation) {
         if let Ok(a) = Algorithm::from_str(algorithm_str) {
-            self.validation_algorithm = Some(a);
+            match loc {
+                ValidationLocation::Target => self.validation_algorithm_target = Some(a),
+                ValidationLocation::Proxy => self.validation_algorithm_proxy = Some(a),
+            }
         } else {
             panic!("Invalid algorithm")
         }
     }
-    pub fn set_validation_key(&mut self, key_str: &str) {
+    pub fn set_validation_key(&mut self, key_str: &str, loc: ValidationLocation) {
         // self.validation_key = Some(key_str.to_string());
-        match &self.validation_algorithm {
+        let alg = match loc {
+            ValidationLocation::Target => &self.validation_algorithm_target,
+            ValidationLocation::Proxy => &self.validation_algorithm_proxy,
+        };
+        match &alg {
             Some(va) => match JwtValidationKey::new(va, key_str) {
-                Ok(vk) => {
-                    self.validation_key = Some(vk);
-                }
+                Ok(vk) => match loc {
+                    ValidationLocation::Target => self.validation_key_target = Some(vk),
+                    ValidationLocation::Proxy => self.validation_key_proxy = Some(vk),
+                },
                 Err(e) => {
                     panic!("Invalid key for specified algorithm: {:?}", e);
                 }
@@ -79,8 +102,12 @@ impl Globals {
         }
     }
 
-    pub fn is_hmac(&self) -> bool {
-        match self.validation_algorithm {
+    pub fn is_hmac(&self, loc: ValidationLocation) -> bool {
+        let alg = match loc {
+            ValidationLocation::Target => &self.validation_algorithm_target,
+            ValidationLocation::Proxy => &self.validation_algorithm_proxy,
+        };
+        match alg {
             Some(Algorithm::HS256) | Some(Algorithm::HS384) | Some(Algorithm::HS512) => true,
             _ => false,
         }

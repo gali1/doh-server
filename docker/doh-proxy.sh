@@ -62,9 +62,13 @@ echo "doh-proxy: upstream dns server address: ${UPSTREAM_ADDR}:${UPSTREAM_PORT}"
   --server-address=${UPSTREAM_ADDR}:${UPSTREAM_PORT} \
   --listen-address=0.0.0.0:3000 \
   --path=/dns-query \
-  --validation-algorithm=${VALIDATION_ALGORITHM} \
-  --validation-key-path=/opt/doh-proxy/etc/public_key.pem \
-  --token-issuer=${TOKEN_ISSUER} \
-  --client-ids=${CLIENT_IDS} \
+  --validation-algorithm-target=${VALIDATION_ALGORITHM} \
+  --validation-key-target=/opt/doh-proxy/etc/public_key.pem \
+  --token-issuer-target=${TOKEN_ISSUER} \
+  --client-ids-target=${CLIENT_IDS} \
+  --validation-algorithm-proxy=${VALIDATION_ALGORITHM} \
+  --validation-key-proxy=/opt/doh-proxy/etc/public_key.pem \
+  --token-issuer-proxy=${TOKEN_ISSUER} \
+  --client-ids-proxy=${CLIENT_IDS} \
   --domain-block-rule=/opt/doh-proxy/etc/block.txt \
   --domain-override-rule=/opt/doh-proxy/etc/override.txt
