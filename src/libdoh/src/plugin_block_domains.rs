@@ -1,6 +1,6 @@
 use crate::constants::*;
+use crate::log::*;
 use crate::utils::RequestQueryKey;
-use log::{debug, error, info, warn};
 use regex::Regex;
 use std::collections::HashSet;
 

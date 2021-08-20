@@ -11,9 +11,9 @@ curl -i -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJzdWIiO
 */
 
 use crate::globals::*;
+use crate::log::*;
 use hyper::{Body, Response, StatusCode};
 use jwt_simple::prelude::{JWTClaims, NoCustomClaims};
-use log::{debug, error, info, warn};
 use std::collections::HashSet;
 // use serde_json;
 

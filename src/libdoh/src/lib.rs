@@ -4,6 +4,7 @@ mod constants;
 pub mod dns;
 mod errors;
 mod globals;
+pub mod log;
 pub mod odoh;
 pub mod odoh_proxy;
 pub mod plugin;
@@ -16,6 +17,7 @@ mod utils;
 use crate::constants::*;
 pub use crate::errors::*;
 pub use crate::globals::*;
+use crate::log::*;
 
 use byteorder::{BigEndian, ByteOrder};
 use futures::prelude::*;
@@ -23,7 +25,6 @@ use futures::task::{Context, Poll};
 use hyper::http;
 use hyper::server::conn::Http;
 use hyper::{Body, HeaderMap, Method, Request, Response, StatusCode};
-use log::{debug, error, info, warn};
 use std::convert::TryFrom;
 use std::net::SocketAddr;
 use std::pin::Pin;
@@ -734,20 +735,20 @@ impl DoH {
                 self.globals.tls_cert_path.is_some() && self.globals.tls_cert_key_path.is_some();
         }
         if tls_enabled {
-            println!(
+            info!(
                 "ODoH/DoH Server: Listening on https://{}{}",
                 listen_address, path
             );
-            println!(
+            info!(
                 "ODoH Proxy     : Listening on https://{}{}",
                 listen_address, odoh_proxy_path
             );
         } else {
-            println!(
+            info!(
                 "ODoH/DoH Server: Listening on http://{}{}",
                 listen_address, path
             );
-            println!(
+            info!(
                 "ODoH Proxy     : Listening on http://{}{}",
                 listen_address, odoh_proxy_path
             );

@@ -1,6 +1,6 @@
+use crate::log::*;
 use crate::plugin_override_domains::MapsTo;
 use anyhow::Error;
-use log::{debug, error, info, warn};
 use std::convert::TryFrom;
 use std::str::FromStr;
 use trust_dns_proto::error::ProtoResult;

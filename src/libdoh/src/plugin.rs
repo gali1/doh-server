@@ -1,9 +1,9 @@
 use crate::errors::DoHError;
+use crate::log::*;
 use crate::plugin_block_domains::DomainBlockRule;
 use crate::plugin_override_domains::DomainOverrideRule;
 use crate::utils;
 use crate::utils::RequestQueryKey;
-use log::{debug, error, info, warn};
 use trust_dns_proto::op::Message;
 
 #[derive(Debug, Clone)]

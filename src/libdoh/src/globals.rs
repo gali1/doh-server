@@ -81,7 +81,6 @@ impl Globals {
         }
     }
     pub fn set_validation_key(&mut self, key_str: &str, loc: ValidationLocation) {
-        // self.validation_key = Some(key_str.to_string());
         let alg = match loc {
             ValidationLocation::Target => &self.validation_algorithm_target,
             ValidationLocation::Proxy => &self.validation_algorithm_proxy,

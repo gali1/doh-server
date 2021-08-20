@@ -5,7 +5,7 @@ use libdoh::plugin_block_domains::DomainBlockRule;
 use libdoh::plugin_override_domains::DomainOverrideRule;
 use libdoh::reexports::jwt_simple::prelude::*;
 use libdoh::*;
-use log::{debug, error, info, warn};
+use libdoh::log::*;
 use std::collections::HashSet;
 use std::fs;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6, ToSocketAddrs};
