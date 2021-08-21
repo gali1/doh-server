@@ -66,6 +66,12 @@ pub struct DoH {
     pub globals: Arc<Globals>,
 }
 
+#[derive(Clone, Debug)]
+pub struct DoHWithPeerAddr {
+    pub doh: DoH,
+    pub peer_addr: std::net::SocketAddr,
+}
+
 #[allow(clippy::unnecessary_wraps)]
 fn http_error(status_code: StatusCode) -> Result<Response<Body>, http::Error> {
     let response = Response::builder()
@@ -96,8 +102,9 @@ where
     }
 }
 
+// extended the struct DoH in order to serve peer's IP addr.
 #[allow(clippy::type_complexity)]
-impl hyper::service::Service<http::Request<Body>> for DoH {
+impl hyper::service::Service<http::Request<Body>> for DoHWithPeerAddr {
     type Response = Response<Body>;
     type Error = http::Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
@@ -107,19 +114,20 @@ impl hyper::service::Service<http::Request<Body>> for DoH {
     }
 
     fn call(&mut self, req: Request<Body>) -> Self::Future {
-        let globals = &self.globals;
+        let globals = &self.doh.globals;
         let self_inner = self.clone();
         if req.uri().path() == globals.path {
             Box::pin(async move {
                 let mut subscriber = None;
-                if self_inner.globals.enable_auth_target {
+                if self_inner.doh.globals.enable_auth_target {
                     subscriber = match auth::authenticate(
-                        &self_inner.globals,
+                        &self_inner.doh.globals,
                         &req,
                         ValidationLocation::Target,
+                        &self_inner.peer_addr,
                     ) {
                         Ok((sub, aud)) => {
-                            debug!("Valid token: sub={:?}, aud={:?}", &sub, &aud);
+                            debug!("Valid token or allowed ip: sub={:?}, aud={:?}", &sub, &aud);
                             sub
                         }
                         Err(e) => {
@@ -129,19 +137,20 @@ impl hyper::service::Service<http::Request<Body>> for DoH {
                     };
                 }
                 match *req.method() {
-                    Method::POST => self_inner.serve_post(req, subscriber).await,
-                    Method::GET => self_inner.serve_get(req, subscriber).await,
+                    Method::POST => self_inner.doh.serve_post(req, subscriber).await,
+                    Method::GET => self_inner.doh.serve_get(req, subscriber).await,
                     _ => http_error(StatusCode::METHOD_NOT_ALLOWED),
                 }
             })
         } else if req.uri().path() == globals.odoh_proxy_path {
             Box::pin(async move {
                 let mut subscriber = None;
-                if self_inner.globals.enable_auth_proxy {
+                if self_inner.doh.globals.enable_auth_proxy {
                     subscriber = match auth::authenticate(
-                        &self_inner.globals,
+                        &self_inner.doh.globals,
                         &req,
                         ValidationLocation::Proxy,
+                        &self_inner.peer_addr,
                     ) {
                         Ok((sub, aud)) => {
                             debug!("Valid token: sub={:?}, aud={:?}", &sub, &aud);
@@ -157,13 +166,13 @@ impl hyper::service::Service<http::Request<Body>> for DoH {
                 // Golang impl.: https://github.com/cloudflare/odoh-server-go
                 // Based on the draft and Golang implementation, only post method is allowed.
                 match *req.method() {
-                    Method::POST => self_inner.serve_odoh_proxy_post(req, subscriber).await,
+                    Method::POST => self_inner.doh.serve_odoh_proxy_post(req, subscriber).await,
                     _ => http_error(StatusCode::METHOD_NOT_ALLOWED),
                 }
             })
         } else if req.uri().path() == globals.odoh_configs_path {
             match *req.method() {
-                Method::GET => Box::pin(async move { self_inner.serve_odoh_configs().await }),
+                Method::GET => Box::pin(async move { self_inner.doh.serve_odoh_configs().await }),
                 _ => Box::pin(async { http_error(StatusCode::METHOD_NOT_ALLOWED) }),
             }
         } else {
@@ -689,7 +698,7 @@ impl DoH {
         Ok(response)
     }
 
-    async fn client_serve<I>(self, stream: I, server: Http<LocalExecutor>)
+    async fn client_serve<I>(self, stream: I, server: Http<LocalExecutor>, peer_addr: SocketAddr)
     where
         I: AsyncRead + AsyncWrite + Send + Unpin + 'static,
     {
@@ -701,7 +710,13 @@ impl DoH {
         self.globals.runtime_handle.clone().spawn(async move {
             tokio::time::timeout(
                 self.globals.timeout + Duration::from_secs(1),
-                server.serve_connection(stream, self),
+                server.serve_connection(
+                    stream,
+                    DoHWithPeerAddr {
+                        doh: self,
+                        peer_addr,
+                    },
+                ),
             )
             .await
             .ok();
@@ -716,7 +731,9 @@ impl DoH {
     ) -> Result<(), DoHError> {
         let listener_service = async {
             while let Ok((stream, _client_addr)) = listener.accept().await {
-                self.clone().client_serve(stream, server.clone()).await;
+                self.clone()
+                    .client_serve(stream, server.clone(), _client_addr)
+                    .await;
             }
             Ok(()) as Result<(), DoHError>
         };

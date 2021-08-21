@@ -23,9 +23,6 @@ FLAGS:
     -V, --version              Prints version information
 
 OPTIONS:
-    -D, --odoh-allowed-target-domains <odoh_allowed_target_domains>
-            Allowed domains to which this node (as ODoH proxy) can forward ODoH request, separated with comma. If none
-            is given, it can forward anywhere.
     -j, --client-ids-proxy <client_ids_proxy>
             Proxy allowed client ids of Id token, separated with comma like "id_a,id_b"
 
@@ -52,6 +49,14 @@ OPTIONS:
 
     -X, --max-ttl <max_ttl>                                            Maximum TTL, in seconds [default: 604800]
     -T, --min-ttl <min_ttl>                                            Minimum TTL, in seconds [default: 10]
+    -d, --odoh-allowed-proxy-ips <odoh_allowed_proxy_ips>
+            Allowed ODoH proxies' IP addresses from which this node (as ODoH target) can accept request, separated with
+            comma. If some ips are given, requests from them are accepted even if authorization header is missing. If
+            none is given and no authorization is configured, it can accept anywhere. For standard DoH requests, nothing
+            is done.
+    -D, --odoh-allowed-target-domains <odoh_allowed_target_domains>
+            Allowed domains to which this node (as ODoH proxy) can forward ODoH request, separated with comma. If none
+            is given, it can forward anywhere.
     -q, --odoh-proxy-path <odoh_proxy_path>                            ODoH proxy URI path [default: /proxy]
     -p, --path <path>                                                  URI path [default: /dns-query]
     -g, --public-address <public_address>                              External IP address DoH clients will connect to

@@ -71,5 +71,6 @@ echo "doh-proxy: upstream dns server address: ${UPSTREAM_ADDR}:${UPSTREAM_PORT}"
   --token-issuer-proxy=${TOKEN_ISSUER} \
   --client-ids-proxy=${CLIENT_IDS} \
   --odoh-allowed-target-domains=${ODOH_ALLOWED_TARGET_DOMAINS} \
+  --odoh-allowed-proxy-ips=${ODOH_ALLOWED_PROXY_IPS} \
   --domain-block-rule=/opt/doh-proxy/etc/block.txt \
   --domain-override-rule=/opt/doh-proxy/etc/override.txt

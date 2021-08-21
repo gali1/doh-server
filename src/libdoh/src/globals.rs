@@ -61,6 +61,9 @@ pub struct Globals {
     // allowlist of domains to which ODoH proxy can forward
     pub odoh_allowed_target_domains: Option<HashSet<String>>,
 
+    // allowlist of ips from which ODoH target can accept
+    pub odoh_allowed_proxy_ips: Option<HashSet<std::net::IpAddr>>,
+
     pub domain_block: Option<DomainBlockRule>,
     pub domain_override: Option<DomainOverrideRule>,
     pub query_plugins: Option<AppliedQueryPlugins>,

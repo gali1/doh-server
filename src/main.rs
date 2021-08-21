@@ -83,6 +83,7 @@ fn main() {
         validation_options_proxy: None,
 
         odoh_allowed_target_domains: None,
+        odoh_allowed_proxy_ips: None,
 
         domain_block: None,
         domain_override: None,

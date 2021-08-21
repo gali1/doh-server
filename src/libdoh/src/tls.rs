@@ -117,7 +117,7 @@ impl DoH {
                         }
                         let (raw_stream, _client_addr) = tcp_cnx.unwrap();
                         if let Ok(stream) = tls_acceptor.as_ref().unwrap().accept(raw_stream).await {
-                            self.clone().client_serve(stream, server.clone()).await
+                            self.clone().client_serve(stream, server.clone(), _client_addr).await
                         }
                     }
                     new_tls_acceptor = tls_acceptor_receiver.recv().fuse() => {

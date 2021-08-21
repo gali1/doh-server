@@ -8,7 +8,7 @@ use libdoh::reexports::jwt_simple::prelude::*;
 use libdoh::*;
 use std::collections::HashSet;
 use std::fs;
-use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6, ToSocketAddrs};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6, ToSocketAddrs};
 use std::time::Duration;
 
 #[cfg(feature = "tls")]
@@ -226,6 +226,15 @@ pub fn parse_opts(globals: &mut Globals) {
                 )
         )
         .arg(
+            Arg::with_name("odoh_allowed_proxy_ips")
+                .short("d")
+                .long("odoh-allowed-proxy-ips")
+                .takes_value(true)
+                .help(
+                    "Allowed ODoH proxies' IP addresses from which this node (as ODoH target) can accept request, separated with comma. If some ips are given, requests from them are accepted even if authorization header is missing. If none is given and no authorization is configured, it can accept anywhere. For standard DoH requests, nothing is done."
+                )
+        )
+        .arg(
             Arg::with_name("domain_block")
                 .short("B")
                 .long("domain-block-rule")
@@ -372,6 +381,15 @@ pub fn parse_opts(globals: &mut Globals) {
             .map(|c| c.to_string())
             .collect();
         globals.odoh_allowed_target_domains = Some(allowed_target);
+    };
+
+    if let Some(allowed) = matches.value_of("odoh_allowed_proxy_ips") {
+        let allowed_proxy: HashSet<IpAddr> = allowed
+            .split(",")
+            .filter(|c| c.len() != 0)
+            .map(|c| c.parse().unwrap())
+            .collect();
+        globals.odoh_allowed_proxy_ips = Some(allowed_proxy);
     };
 
     let mut query_plugins = AppliedQueryPlugins::new();

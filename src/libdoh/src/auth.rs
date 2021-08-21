@@ -10,20 +10,70 @@ curl -i -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiO
 curl -i -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJzYW1wbGUtc3ViamVjdCIsImlhdCI6MTYyNTY1NTM5NywiZXhwIjoxOTQxMDE1Mzk3fQ._Wxohc89qpyRw0zXMiFh8Gof8UdgOsh2enmmUeWaOLaTAaagqVkxYGCCgj6FqHlGUkm2vrB4JQES370z8xCTdQ" -H 'accept: application/dns-message' 'http://localhost:58080/dns-query?dns=rmUBAAABAAAAAAAAB2NhcmVlcnMHb3BlbmRucwNjb20AAAEAAQ' | hexdump -C
 */
 
+use crate::constants::*;
 use crate::globals::*;
 use crate::log::*;
+use anyhow::Error;
 use hyper::{Body, Response, StatusCode};
 use jwt_simple::prelude::{JWTClaims, NoCustomClaims};
 use std::collections::HashSet;
-// use serde_json;
+use std::net::{IpAddr, SocketAddr};
+
+fn retrieve_item_ip(header_key: &str, headers: &hyper::header::HeaderMap) -> Option<IpAddr> {
+  if let Some(val) = headers.get(header_key) {
+    if let Ok(string_item) = val.to_str() {
+      let items: Vec<&str> = string_item
+        .split_whitespace()
+        .flat_map(|x| x.split(","))
+        .collect();
+      if items.len() > 0 {
+        if let Ok(parsed) = items[0].parse::<IpAddr>() {
+          return Some(parsed);
+        }
+      }
+    }
+  };
+  None
+}
+// This follows request-ip of npm
+// https://www.npmjs.com/package/request-ip
+fn retrieve_real_ip(req: &hyper::Request<hyper::Body>) -> Option<IpAddr> {
+  let headers = req.headers();
+  for i in HEADER_IP_KEYS {
+    if let Some(item) = retrieve_item_ip(i, headers) {
+      return Some(item);
+    }
+  }
+  // if nothing is in the request header, return None. use remote_addr.
+  None
+}
 
 pub fn authenticate(
   globals: &Globals,
   req: &hyper::Request<hyper::Body>,
   loc: ValidationLocation,
+  peer_addr: &SocketAddr,
 ) -> Result<(Option<String>, Option<HashSet<String>>), Response<Body>> {
   let headers = req.headers();
-  debug!("auth::authenticate, {:?}", headers);
+  debug!("auth::authenticate, request header\n{:#?}", headers);
+  // ODOH Targetの場合のみ、ソースIPをここでチェックして弾く。Allowの場合はJWT無しでもOKにする。
+  if let ValidationLocation::Target = loc {
+    match &globals.odoh_allowed_proxy_ips {
+      Some(allowed_ips) => {
+        debug!("peer's Socket addr from TCP stream: {:?}", peer_addr);
+        let real_ip = if let Some(ip) = retrieve_real_ip(req) {
+          ip
+        } else {
+          peer_addr.ip()
+        };
+        debug!("real_ip from http header or tcp stream: {:?}", real_ip);
+        if allowed_ips.contains(&real_ip) {
+          return Ok((None, None));
+        }
+      }
+      None => (),
+    }
+  };
 
   let headers_map = headers.get(hyper::header::AUTHORIZATION);
   let res = match headers_map {
