@@ -109,6 +109,7 @@ impl hyper::service::Service<http::Request<Body>> for DoH {
     fn call(&mut self, req: Request<Body>) -> Self::Future {
         let globals = &self.globals;
         let self_inner = self.clone();
+        println!("request header {:#?}", req.headers());
         if req.uri().path() == globals.path {
             Box::pin(async move {
                 let mut subscriber = None;
@@ -708,7 +709,7 @@ impl DoH {
     ) -> Result<(), DoHError> {
         let listener_service = async {
             while let Ok((stream, _client_addr)) = listener.accept().await {
-                println!("_client_addr: {:?}", _client_addr);
+                println!("client_addr {:#?}", _client_addr);
                 self.clone().client_serve(stream, server.clone()).await;
             }
             Ok(()) as Result<(), DoHError>
