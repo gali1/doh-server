@@ -11,7 +11,7 @@ This repo is a fork of `doh-proxy`. This forked version has the following functi
 
 ## Usage
 
-```:bash
+```:text
 USAGE:
     doh-proxy [FLAGS] [OPTIONS]
 
@@ -23,6 +23,9 @@ FLAGS:
     -V, --version              Prints version information
 
 OPTIONS:
+    -D, --odoh-allowed-target-domains <odoh_allowed_target_domains>
+            Allowed domains to which this node (as ODoH proxy) can forward ODoH request, separated with comma. If none
+            is given, it can forward anywhere.
     -j, --client-ids-proxy <client_ids_proxy>
             Proxy allowed client ids of Id token, separated with comma like "id_a,id_b"
 

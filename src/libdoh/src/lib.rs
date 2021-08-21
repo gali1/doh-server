@@ -109,14 +109,13 @@ impl hyper::service::Service<http::Request<Body>> for DoH {
     fn call(&mut self, req: Request<Body>) -> Self::Future {
         let globals = &self.globals;
         let self_inner = self.clone();
-        println!("request header {:#?}", req.headers());
         if req.uri().path() == globals.path {
             Box::pin(async move {
                 let mut subscriber = None;
                 if self_inner.globals.enable_auth_target {
                     subscriber = match auth::authenticate(
                         &self_inner.globals,
-                        &req.headers(),
+                        &req,
                         ValidationLocation::Target,
                     ) {
                         Ok((sub, aud)) => {
@@ -141,7 +140,7 @@ impl hyper::service::Service<http::Request<Body>> for DoH {
                 if self_inner.globals.enable_auth_proxy {
                     subscriber = match auth::authenticate(
                         &self_inner.globals,
-                        &req.headers(),
+                        &req,
                         ValidationLocation::Proxy,
                     ) {
                         Ok((sub, aud)) => {
@@ -175,7 +174,8 @@ impl hyper::service::Service<http::Request<Body>> for DoH {
 
 struct ParsedUriQuery {
     pub dns_query: Option<Vec<u8>>,
-    pub target_uri: Option<String>,
+    pub targethost: Option<String>,
+    pub targetpath: Option<String>,
 }
 
 impl DoH {
@@ -240,21 +240,12 @@ impl DoH {
                 }
             }
         }
-        let target_uri = if let (Some(host), Some(path)) = (targethost, targetpath) {
-            // remove percent encoding
-            Some(
-                decode(&format!("https://{}{}", host, path))
-                    .unwrap_or(std::borrow::Cow::Borrowed(""))
-                    .to_string(),
-            )
-        } else {
-            None
-        };
         if let Some(question_str) = question_str {
             if question_str.len() > MAX_DNS_QUESTION_LEN * 4 / 3 {
                 return ParsedUriQuery {
                     dns_query: None,
-                    target_uri,
+                    targethost,
+                    targetpath,
                 };
             }
         }
@@ -265,13 +256,15 @@ impl DoH {
             _ => {
                 return ParsedUriQuery {
                     dns_query: None,
-                    target_uri,
+                    targethost,
+                    targetpath,
                 }
             }
         };
         ParsedUriQuery {
             dns_query: Some(query),
-            target_uri,
+            targethost,
+            targetpath,
         }
     }
 
@@ -363,13 +356,25 @@ impl DoH {
     async fn serve_odoh_proxy(
         &self,
         encrypted_query: Vec<u8>,
-        target_uri: &str,
+        targethost: &str,
+        targetpath: &str,
         subscriber: Option<String>,
     ) -> Result<Response<Body>, http::Error> {
+        // check allowed destinations
+        if let Some(allowed_domains) = &self.globals.odoh_allowed_target_domains {
+            if !allowed_domains.contains(targethost) {
+                warn!("[ODoH proxy] Unacceptable target: {}", targethost);
+                return http_error(StatusCode::BAD_REQUEST);
+            }
+        }
+        // remove percent encoding
+        let target_uri = decode(&format!("https://{}{}", targethost, targetpath))
+            .unwrap_or(std::borrow::Cow::Borrowed(""))
+            .to_string();
         let encrypted_response = match self
             .globals
             .odoh_proxy
-            .forward_to_target(&encrypted_query, target_uri)
+            .forward_to_target(&encrypted_query, &target_uri)
             .await
         {
             Ok(resp) => self.build_response(resp, 0u32, DoHType::Oblivious.as_str()),
@@ -402,11 +407,13 @@ impl DoH {
         match Self::parse_content_type(&req) {
             Ok(DoHType::Oblivious) => {
                 let http_query = req.uri().query().unwrap_or("");
-                let target_uri = match self.parse_query_string(http_query) {
+
+                let (targethost, targetpath) = match self.parse_query_string(http_query) {
                     ParsedUriQuery {
                         dns_query: _,
-                        target_uri: Some(uri),
-                    } => uri,
+                        targethost: Some(h),
+                        targetpath: Some(p),
+                    } => (h, p),
                     _ => return http_error(StatusCode::BAD_REQUEST),
                 };
                 let encrypted_query = match self.read_body(req.into_body()).await {
@@ -419,7 +426,7 @@ impl DoH {
                     Err(e) => return http_error(StatusCode::from(e)),
                 };
 
-                self.serve_odoh_proxy(encrypted_query, &target_uri, subscriber)
+                self.serve_odoh_proxy(encrypted_query, &targethost, &targetpath, subscriber)
                     .await
             }
             Ok(_) => http_error(StatusCode::UNSUPPORTED_MEDIA_TYPE),
@@ -709,7 +716,6 @@ impl DoH {
     ) -> Result<(), DoHError> {
         let listener_service = async {
             while let Ok((stream, _client_addr)) = listener.accept().await {
-                println!("client_addr {:#?}", _client_addr);
                 self.clone().client_serve(stream, server.clone()).await;
             }
             Ok(()) as Result<(), DoHError>

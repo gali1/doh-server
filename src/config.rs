@@ -1,11 +1,11 @@
 use crate::constants::*;
 use clap::Arg;
+use libdoh::log::*;
 use libdoh::plugin::{AppliedQueryPlugins, QueryPlugin};
 use libdoh::plugin_block_domains::DomainBlockRule;
 use libdoh::plugin_override_domains::DomainOverrideRule;
 use libdoh::reexports::jwt_simple::prelude::*;
 use libdoh::*;
-use libdoh::log::*;
 use std::collections::HashSet;
 use std::fs;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6, ToSocketAddrs};
@@ -217,6 +217,15 @@ pub fn parse_opts(globals: &mut Globals) {
                 ),
         )
         .arg(
+            Arg::with_name("odoh_allowed_target_domains")
+                .short("D")
+                .long("odoh-allowed-target-domains")
+                .takes_value(true)
+                .help(
+                    "Allowed domains to which this node (as ODoH proxy) can forward ODoH request, separated with comma. If none is given, it can forward anywhere.",
+                )
+        )
+        .arg(
             Arg::with_name("domain_block")
                 .short("B")
                 .long("domain-block-rule")
@@ -355,6 +364,15 @@ pub fn parse_opts(globals: &mut Globals) {
         }
         globals.validation_options_proxy = Some(options);
     }
+
+    if let Some(allowed) = matches.value_of("odoh_allowed_target_domains") {
+        let allowed_target: HashSet<String> = allowed
+            .split(",")
+            .filter(|c| c.len() != 0)
+            .map(|c| c.to_string())
+            .collect();
+        globals.odoh_allowed_target_domains = Some(allowed_target);
+    };
 
     let mut query_plugins = AppliedQueryPlugins::new();
     if let Some(override_list_path) = matches.value_of("domain_override") {

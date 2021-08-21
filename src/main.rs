@@ -82,6 +82,8 @@ fn main() {
         validation_algorithm_proxy: None,
         validation_options_proxy: None,
 
+        odoh_allowed_target_domains: None,
+
         domain_block: None,
         domain_override: None,
         query_plugins: None,

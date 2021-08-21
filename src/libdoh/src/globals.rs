@@ -58,6 +58,9 @@ pub struct Globals {
     pub validation_algorithm_proxy: Option<Algorithm>,
     pub validation_options_proxy: Option<VerificationOptions>,
 
+    // allowlist of domains to which ODoH proxy can forward
+    pub odoh_allowed_target_domains: Option<HashSet<String>>,
+
     pub domain_block: Option<DomainBlockRule>,
     pub domain_override: Option<DomainOverrideRule>,
     pub query_plugins: Option<AppliedQueryPlugins>,

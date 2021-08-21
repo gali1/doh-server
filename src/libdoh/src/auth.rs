@@ -19,9 +19,10 @@ use std::collections::HashSet;
 
 pub fn authenticate(
   globals: &Globals,
-  headers: &hyper::HeaderMap,
+  req: &hyper::Request<hyper::Body>,
   loc: ValidationLocation,
 ) -> Result<(Option<String>, Option<HashSet<String>>), Response<Body>> {
+  let headers = req.headers();
   debug!("auth::authenticate, {:?}", headers);
 
   let headers_map = headers.get(hyper::header::AUTHORIZATION);
