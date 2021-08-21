@@ -55,7 +55,7 @@ pub fn authenticate(
 ) -> Result<(Option<String>, Option<HashSet<String>>), Response<Body>> {
   let headers = req.headers();
   debug!("auth::authenticate, request header\n{:#?}", headers);
-  // ODOH Targetの場合のみ、ソースIPをここでチェックして弾く。Allowの場合はJWT無しでもOKにする。
+  // (O)DOH Targetの場合、ソースIPをここでチェックして弾く。Allowの場合はJWT無しでもOKにする。
   if let ValidationLocation::Target = loc {
     match &globals.odoh_allowed_proxy_ips {
       Some(allowed_ips) => {
