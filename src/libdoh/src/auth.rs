@@ -13,7 +13,6 @@ curl -i -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJzdWIiO
 use crate::constants::*;
 use crate::globals::*;
 use crate::log::*;
-use anyhow::Error;
 use hyper::{Body, Response, StatusCode};
 use jwt_simple::prelude::{JWTClaims, NoCustomClaims};
 use std::collections::HashSet;
