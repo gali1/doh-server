@@ -708,6 +708,7 @@ impl DoH {
     ) -> Result<(), DoHError> {
         let listener_service = async {
             while let Ok((stream, _client_addr)) = listener.accept().await {
+                println!("_client_addr: {:?}", _client_addr);
                 self.clone().client_serve(stream, server.clone()).await;
             }
             Ok(()) as Result<(), DoHError>
