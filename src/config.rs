@@ -231,7 +231,7 @@ pub fn parse_opts(globals: &mut Globals) {
                 .long("odoh-allowed-proxy-ips")
                 .takes_value(true)
                 .help(
-                    "Allowed ODoH proxies' IP addresses/DoH client addresses from which this node (as (O)DoH target) can accept requests, separated with comma. If some ips are given, requests from them are accepted even if authorization header is missing. If none is given and no authorization is configured, it can accept anywhere."
+                    "Allowed ODoH proxies' IP addresses/DoH client addresses from which this node (as (O)DoH target) can accept requests, separated with comma. If some ips are given, requests from them are accepted when authorization header is missing (of course rejected the when invalid token is given). If none is given and no authorization is configured, it can accept anywhere."
                 )
         )
         .arg(
