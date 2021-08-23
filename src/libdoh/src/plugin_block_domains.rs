@@ -54,19 +54,41 @@ impl DomainBlockRule {
 
     // check longest common suffix with qptrie
     let rev_qn = reverse_string(&nn);
-    let longest_common_suffix = self
-      .suffix_qp
-      .longest_common_prefix(rev_qn.as_bytes())
-      .as_str();
+    // let longest_common_suffix = self
+    //   .suffix_qp
+    //   .longest_common_prefix(rev_qn.as_bytes())
+    //   .as_str();
+    // let qp_end = qp_start.elapsed();
 
-    // retrieve the exact domain part of the matched suffix
-    let vec_lcs_split = longest_common_suffix.split(".");
-    let vec_rqn_split = rev_qn.split(".");
-    let common_domain_suffix: Vec<&str> = vec_lcs_split
-      .zip(vec_rqn_split)
-      .filter(|(x, y)| x == y)
-      .map(|(x, _)| x)
-      .collect();
+    // info!(
+    //   "[Block] QP_LCP: {:6}ms経過しました。",
+    //   qp_end.subsec_nanos() / 1_000
+    // );
+    // let qp_start = std::time::Instant::now(); // TODO:
+
+    // // retrieve the exact domain part of the matched suffix
+    // let vec_lcs_split: Vec<&str> = longest_common_suffix.split(".").collect();
+    // let vec_rqn_split: Vec<&str> = rev_qn.split(".").collect();
+    // let mut common_domain_suffix = vec![];
+    // for i in 0..vec_lcs_split.len() {
+    //   if vec_lcs_split[i] == vec_rqn_split[i] {
+    //     common_domain_suffix.push(vec_lcs_split[i])
+    //   }
+    // }
+    // let common_domain_suffix: Vec<&str> = vec_lcs_split
+    //   .zip(vec_rqn_split)
+    //   .filter(|(x, y)| x == y)
+    //   .map(|(x, _)| x)
+    //   .collect();
+
+    // let qp_end = qp_start.elapsed();
+    // info!(
+    //   "[Block] QP_Iter: {:6}ms経過しました。",
+    //   qp_end.subsec_nanos() / 1_000
+    // );
+    // let qp_start = std::time::Instant::now(); // TODO:
+    let common_domain_suffix: Vec<&str> = rev_qn.split(".").collect();
+
     // check from longer domain suffixes if it is included in the trie
     let domain_parts_num = common_domain_suffix.len();
     for idx in 0..domain_parts_num {
