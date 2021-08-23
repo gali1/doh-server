@@ -126,3 +126,18 @@ impl TryFrom<&Message> for RequestKey {
     }
   }
 }
+
+pub fn reverse_string(text: &str) -> String {
+  text.chars().rev().collect::<String>()
+}
+
+pub fn str_vec_to_domain(split: &Vec<&str>) -> String {
+  if split.len() == 0 {
+    return "".to_string();
+  }
+  let mut domain = split[0].to_string();
+  for i in 1..split.len() {
+    domain = format!("{}.{}", domain, split[i]);
+  }
+  domain
+}
