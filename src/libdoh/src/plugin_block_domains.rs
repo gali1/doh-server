@@ -24,7 +24,7 @@ impl DomainBlockRule {
           d
         }
       })
-      .filter(|x| re.is_match(x))
+      .filter(|x| re.is_match(x) || (x.split('.').collect::<Vec<&str>>().len() == 1))
       .map(|y| y.to_string())
       .collect();
 
