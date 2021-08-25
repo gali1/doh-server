@@ -75,14 +75,6 @@ pub fn parse_opts(globals: &mut Globals) {
                 .help("URI path"),
         )
         .arg(
-            Arg::with_name("odoh_proxy_path")
-                .short("q")
-                .long("odoh-proxy-path")
-                .takes_value(true)
-                .default_value(ODOH_PROXY_PATH)
-                .help("ODoH proxy URI path"),
-        )
-        .arg(
             Arg::with_name("max_clients")
                 .short("c")
                 .long("max-clients")
@@ -156,27 +148,12 @@ pub fn parse_opts(globals: &mut Globals) {
                 .help("Target validation key file path like \"./public_key.pem\""),
         )
         .arg(
-            Arg::with_name("validation_key_proxy")
-                .short("w")
-                .long("validation-key-proxy")
-                .takes_value(true)
-                .help("Proxy validation key file path like \"./public_key.pem\""),
-        )
-        .arg(
             Arg::with_name("validation_algorithm_target")
                 .short("A")
                 .long("validation-algorithm-target")
                 .takes_value(true)
                 .default_value(VALIDATION_ALGORITHM)
                 .help("Target validation algorithm"),
-        )
-        .arg(
-            Arg::with_name("validation_algorithm_proxy")
-                .short("a")
-                .long("validation-algorithm-proxy")
-                .takes_value(true)
-                .default_value(VALIDATION_ALGORITHM)
-                .help("Proxy validation algorithm"),
         )
         .arg(
             Arg::with_name("token_issuer_target")
@@ -189,16 +166,6 @@ pub fn parse_opts(globals: &mut Globals) {
                 ),
         )
         .arg(
-            Arg::with_name("token_issuer_proxy")
-                .short("m")
-                .long("token-issuer-proxy")
-                .validator(verify_url)
-                .takes_value(true)
-                .help(
-                    "Proxy allowed issuer of Id token specified as URL like \"https://example.com/issue\"",
-                ),
-        )
-        .arg(
             Arg::with_name("client_ids_target")
                 .short("J")
                 .long("client-ids-target")
@@ -206,24 +173,6 @@ pub fn parse_opts(globals: &mut Globals) {
                 .help(
                     "Target allowed client ids of Id token, separated with comma like \"id_a,id_b\"",
                 ),
-        )
-        .arg(
-            Arg::with_name("client_ids_proxy")
-                .short("j")
-                .long("client-ids-proxy")
-                .takes_value(true)
-                .help(
-                    "Proxy allowed client ids of Id token, separated with comma like \"id_a,id_b\"",
-                ),
-        )
-        .arg(
-            Arg::with_name("odoh_allowed_target_domains")
-                .short("D")
-                .long("odoh-allowed-target-domains")
-                .takes_value(true)
-                .help(
-                    "Allowed domains to which this node (as ODoH proxy) can forward ODoH request, separated with comma. If none is given, it can forward anywhere.",
-                )
         )
         .arg(
             Arg::with_name("odoh_allowed_proxy_ips")
@@ -268,6 +217,59 @@ pub fn parse_opts(globals: &mut Globals) {
                 .help("Path to the PEM-encoded secret keys (only required for built-in TLS)"),
         );
 
+    #[cfg(feature = "odoh-proxy")]
+    let options = options.arg(
+        Arg::with_name("odoh_proxy_path")
+            .short("q")
+            .long("odoh-proxy-path")
+            .takes_value(true)
+            .default_value(ODOH_PROXY_PATH)
+            .help("ODoH proxy URI path"),
+    )
+    .arg(
+        Arg::with_name("validation_key_proxy")
+            .short("w")
+            .long("validation-key-proxy")
+            .takes_value(true)
+            .help("Proxy validation key file path like \"./public_key.pem\""),
+    )
+    .arg(
+        Arg::with_name("validation_algorithm_proxy")
+            .short("a")
+            .long("validation-algorithm-proxy")
+            .takes_value(true)
+            .default_value(VALIDATION_ALGORITHM)
+            .help("Proxy validation algorithm"),
+    )
+    .arg(
+        Arg::with_name("token_issuer_proxy")
+            .short("m")
+            .long("token-issuer-proxy")
+            .validator(verify_url)
+            .takes_value(true)
+            .help(
+                "Proxy allowed issuer of Id token specified as URL like \"https://example.com/issue\"",
+            ),
+    )
+    .arg(
+        Arg::with_name("client_ids_proxy")
+            .short("j")
+            .long("client-ids-proxy")
+            .takes_value(true)
+            .help(
+                "Proxy allowed client ids of Id token, separated with comma like \"id_a,id_b\"",
+            ),
+    )
+    .arg(
+        Arg::with_name("odoh_allowed_target_domains")
+            .short("D")
+            .long("odoh-allowed-target-domains")
+            .takes_value(true)
+            .help(
+                "Allowed domains to which this node (as ODoH proxy) can forward ODoH request, separated with comma. If none is given, it can forward anywhere.",
+            )
+    );
+
     let matches = options.get_matches();
     globals.listen_address = matches.value_of("listen_address").unwrap().parse().unwrap();
 
@@ -293,10 +295,6 @@ pub fn parse_opts(globals: &mut Globals) {
     globals.path = matches.value_of("path").unwrap().to_string();
     if !globals.path.starts_with('/') {
         globals.path = format!("/{}", globals.path);
-    }
-    globals.odoh_proxy_path = matches.value_of("odoh_proxy_path").unwrap().to_string();
-    if !globals.odoh_proxy_path.starts_with('/') {
-        globals.odoh_proxy_path = format!("/{}", globals.odoh_proxy_path);
     }
     globals.max_clients = matches.value_of("max_clients").unwrap().parse().unwrap();
     globals.timeout = Duration::from_secs(matches.value_of("timeout").unwrap().parse().unwrap());
@@ -341,48 +339,6 @@ pub fn parse_opts(globals: &mut Globals) {
         globals.validation_options_target = Some(options);
     }
 
-    if let Some(p) = matches.value_of("validation_key_proxy") {
-        if let Some(a) = matches.value_of("validation_algorithm_proxy") {
-            info!("[Auth (O)DoH proxy] Validation algorithm is {:?}", &a);
-            globals.set_validation_algorithm(a, ValidationLocation::Proxy);
-        }
-
-        if let Ok(content) = fs::read_to_string(p) {
-            if globals.is_hmac(ValidationLocation::Proxy) {
-                let truncate_vec: Vec<&str> = content.split("\n").collect();
-                assert_eq!(truncate_vec.len() > 0, true);
-                globals.set_validation_key(truncate_vec[0], ValidationLocation::Proxy);
-            } else {
-                globals.set_validation_key(&content, ValidationLocation::Proxy);
-            }
-        }
-        globals.enable_auth_proxy = true;
-        info!("[Auth (O)DoH proxy] Validation key is successfully set.");
-
-        // Treat a given token as ID token
-        // Check audience and issuer if they are set when start
-        let mut options = VerificationOptions::default();
-        if let Some(iss) = matches.value_of("token_issuer_proxy") {
-            options.allowed_issuers = Some(HashSet::from_strings(&vec![iss]));
-            info!("[Auth (O)DoH proxy] Allowed issuer: {}", iss);
-        }
-        if let Some(cids) = matches.value_of("client_ids_proxy") {
-            let cids_vec: Vec<String> = cids.split(',').map(|x| x.to_string()).collect();
-            options.allowed_audiences = Some(HashSet::from_strings(&cids_vec));
-            info!("[Auth (O)DoH proxy] Allowed client ids: {:?}", cids_vec);
-        }
-        globals.validation_options_proxy = Some(options);
-    }
-
-    if let Some(allowed) = matches.value_of("odoh_allowed_target_domains") {
-        let allowed_target: HashSet<String> = allowed
-            .split(",")
-            .filter(|c| c.len() != 0)
-            .map(|c| c.to_string())
-            .collect();
-        globals.odoh_allowed_target_domains = Some(allowed_target);
-    };
-
     if let Some(allowed) = matches.value_of("odoh_allowed_proxy_ips") {
         let allowed_proxy: HashSet<IpAddr> = allowed
             .split(",")
@@ -391,6 +347,51 @@ pub fn parse_opts(globals: &mut Globals) {
             .collect();
         globals.odoh_allowed_proxy_ips = Some(allowed_proxy);
     };
+
+    #[cfg(feature = "odoh-proxy")]
+    {
+        if let Some(p) = matches.value_of("validation_key_proxy") {
+            if let Some(a) = matches.value_of("validation_algorithm_proxy") {
+                info!("[Auth (O)DoH proxy] Validation algorithm is {:?}", &a);
+                globals.set_validation_algorithm(a, ValidationLocation::Proxy);
+            }
+
+            if let Ok(content) = fs::read_to_string(p) {
+                if globals.is_hmac(ValidationLocation::Proxy) {
+                    let truncate_vec: Vec<&str> = content.split("\n").collect();
+                    assert_eq!(truncate_vec.len() > 0, true);
+                    globals.set_validation_key(truncate_vec[0], ValidationLocation::Proxy);
+                } else {
+                    globals.set_validation_key(&content, ValidationLocation::Proxy);
+                }
+            }
+            globals.enable_auth_proxy = true;
+            info!("[Auth (O)DoH proxy] Validation key is successfully set.");
+
+            // Treat a given token as ID token
+            // Check audience and issuer if they are set when start
+            let mut options = VerificationOptions::default();
+            if let Some(iss) = matches.value_of("token_issuer_proxy") {
+                options.allowed_issuers = Some(HashSet::from_strings(&vec![iss]));
+                info!("[Auth (O)DoH proxy] Allowed issuer: {}", iss);
+            }
+            if let Some(cids) = matches.value_of("client_ids_proxy") {
+                let cids_vec: Vec<String> = cids.split(',').map(|x| x.to_string()).collect();
+                options.allowed_audiences = Some(HashSet::from_strings(&cids_vec));
+                info!("[Auth (O)DoH proxy] Allowed client ids: {:?}", cids_vec);
+            }
+            globals.validation_options_proxy = Some(options);
+        }
+
+        if let Some(allowed) = matches.value_of("odoh_allowed_target_domains") {
+            let allowed_target: HashSet<String> = allowed
+                .split(",")
+                .filter(|c| c.len() != 0)
+                .map(|c| c.to_string())
+                .collect();
+            globals.odoh_allowed_target_domains = Some(allowed_target);
+        };
+    }
 
     let mut query_plugins = AppliedQueryPlugins::new();
     if let Some(override_list_path) = matches.value_of("domain_override") {
@@ -420,8 +421,6 @@ pub fn parse_opts(globals: &mut Globals) {
         globals.requires_dns_message_parsing = true;
     }
 
-    globals.odoh_proxy = libdoh::odoh_proxy::ODoHProxy::new(globals.timeout).unwrap();
-
     #[cfg(feature = "tls")]
     {
         globals.tls_cert_path = matches.value_of("tls_cert_path").map(PathBuf::from);
@@ -429,6 +428,15 @@ pub fn parse_opts(globals: &mut Globals) {
             .value_of("tls_cert_key_path")
             .map(PathBuf::from)
             .or_else(|| globals.tls_cert_path.clone());
+    }
+
+    #[cfg(feature = "odoh-proxy")]
+    {
+        globals.odoh_proxy_path = matches.value_of("odoh_proxy_path").unwrap().to_string();
+        if !globals.odoh_proxy_path.starts_with('/') {
+            globals.odoh_proxy_path = format!("/{}", globals.odoh_proxy_path);
+        }
+        globals.odoh_proxy = libdoh::odoh_proxy::ODoHProxy::new(globals.timeout).unwrap();
     }
 
     if let Some(hostname) = matches.value_of("hostname") {
@@ -451,15 +459,18 @@ pub fn parse_opts(globals: &mut Globals) {
             builder.serialize().unwrap()
         );
 
-        let builder = dnsstamps::ODoHRelayBuilder::new(
-            hostname.to_string(),
-            globals.odoh_proxy_path.to_string(),
-        );
-        info!(
-            "Test DNS stamp to reach [{}] over Oblivious DoH Proxy: [{}]\n",
-            hostname,
-            builder.serialize().unwrap()
-        );
+        #[cfg(feature = "odoh-proxy")]
+        {
+            let builder = dnsstamps::ODoHRelayBuilder::new(
+                hostname.to_string(),
+                globals.odoh_proxy_path.to_string(),
+            );
+            println!(
+                "Test DNS stamp to reach [{}] over Oblivious DoH Proxy: [{}]\n",
+                hostname,
+                builder.serialize().unwrap()
+            );
+        }
 
         info!("Check out https://dnscrypt.info/stamps/ to compute the actual stamps.\n")
     } else {

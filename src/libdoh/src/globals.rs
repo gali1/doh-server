@@ -1,5 +1,6 @@
 use crate::algorithm::*;
 use crate::odoh::ODoHRotator;
+#[cfg(feature = "odoh-proxy")]
 use crate::odoh_proxy::ODoHProxy;
 use crate::plugin::AppliedQueryPlugins;
 use crate::plugin_block_domains::DomainBlockRule;
@@ -34,7 +35,6 @@ pub struct Globals {
     pub local_bind_address: SocketAddr,
     pub server_address: SocketAddr,
     pub path: String,
-    pub odoh_proxy_path: String,
     pub max_clients: usize,
     pub timeout: Duration,
     pub clients_count: ClientsCount,
@@ -70,6 +70,11 @@ pub struct Globals {
     pub requires_dns_message_parsing: bool,
     pub odoh_configs_path: String,
     pub odoh_rotator: Arc<ODoHRotator>,
+
+    #[cfg(feature = "odoh-proxy")]
+    pub odoh_proxy_path: String,
+
+    #[cfg(feature = "odoh-proxy")]
     pub odoh_proxy: ODoHProxy,
 
     pub runtime_handle: runtime::Handle,

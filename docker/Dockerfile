@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -qy --no-install-recommends $BUILD_DEPS &&
     echo "Building DoH Proxy from source" && \
     git clone https://github.com/junkurihara/doh-server doh-server && \
     cd doh-server && git checkout jwt-auth && \
-    cargo build --release --no-default-features&& \
+    cargo build --release --no-default-features --features=odoh-proxy&& \
     mkdir -p /opt/doh-proxy/sbin && \
     mv /tmp/doh-server/target/release/doh-proxy /opt/doh-proxy/sbin/ && \
     strip --strip-all /opt/doh-proxy/sbin/doh-proxy && \

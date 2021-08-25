@@ -14,6 +14,7 @@ use crate::config::*;
 use crate::constants::*;
 
 use libdoh::odoh::ODoHRotator;
+#[cfg(feature = "odoh-proxy")]
 use libdoh::odoh_proxy::ODoHProxy;
 use libdoh::reexports::tokio;
 // use std::env;
@@ -60,7 +61,6 @@ fn main() {
         local_bind_address: SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 0),
         server_address: SERVER_ADDRESS.parse().unwrap(),
         path: PATH.to_string(),
-        odoh_proxy_path: ODOH_PROXY_PATH.to_string(),
         max_clients: MAX_CLIENTS,
         timeout: Duration::from_secs(TIMEOUT_SEC),
         clients_count: Default::default(),
@@ -91,6 +91,10 @@ fn main() {
         requires_dns_message_parsing: false,
         odoh_configs_path: ODOH_CONFIGS_PATH.to_string(),
         odoh_rotator: Arc::new(rotator),
+
+        #[cfg(feature = "odoh-proxy")]
+        odoh_proxy_path: ODOH_PROXY_PATH.to_string(),
+        #[cfg(feature = "odoh-proxy")]
         odoh_proxy: ODoHProxy::new(Duration::from_secs(TIMEOUT_SEC)).unwrap(),
 
         runtime_handle: runtime.handle().clone(),
