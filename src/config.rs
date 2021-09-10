@@ -174,7 +174,7 @@ pub fn parse_opts(globals: &mut Globals) {
         )
         .arg(
             Arg::with_name("client_ids_target")
-                .short("J")
+                .short("S")
                 .long("client-ids-target")
                 .takes_value(true)
                 .help(
@@ -260,7 +260,7 @@ pub fn parse_opts(globals: &mut Globals) {
     )
     .arg(
         Arg::with_name("client_ids_proxy")
-            .short("j")
+            .short("s")
             .long("client-ids-proxy")
             .takes_value(true)
             .help(
