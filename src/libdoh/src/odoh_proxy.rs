@@ -1,7 +1,56 @@
 use crate::constants::*;
 use crate::errors::DoHError;
 use hyper::http::StatusCode;
+use regex::Regex;
 use reqwest::header;
+use std::collections::HashMap;
+
+fn number_from_query_key(query_key: &str) -> usize {
+    let regex_num = Regex::new(r"\d+").unwrap();
+    let num_str = regex_num.captures(query_key).unwrap();
+    (&num_str[0]).parse::<usize>().unwrap()
+}
+
+pub fn relay_url_from_query_string(
+    http_query: &str,
+) -> Result<Vec<(String, String)>, DoHError> {
+    let mut hm_host_path: HashMap<usize, (Option<String>, Option<String>)> = HashMap::new();
+    let relayhost_regex = Regex::new(&format!("{}{}{}", r"^", MODOH_PROXY_HOST_QUERY_PARAM, r"\[\d+\]$")).unwrap();
+    let relaypath_regex = Regex::new(&format!("{}{}{}", r"^", MODOH_PROXY_PATH_QUERY_PARAM, r"\[\d+\]$")).unwrap();
+    for parts in http_query.split('&') {
+        let mut kv = parts.split('=');
+        if let Some(k) = kv.next() {
+            if relayhost_regex.is_match(k) {
+                let num = number_from_query_key(k);
+                let hp = hm_host_path.entry(num).or_insert((None, None));
+                hp.0 = kv.next().map(str::to_string);
+            }
+            if relaypath_regex.is_match(k) {
+                let num = number_from_query_key(k);
+                let hp = hm_host_path.entry(num).or_insert((None, None));
+                hp.1 = kv.next().map(str::to_string);
+            }
+        }
+    }
+
+    let mut vec_host_path: Vec<(String, String)> = Vec::new();
+    for i in 0..hm_host_path.len() {
+        match hm_host_path.get(&i) {
+            Some(tuple) => {
+                if let (Some(h), Some(p)) = tuple {
+                    vec_host_path.push((h.to_string(), p.to_string()));
+                }
+                else {
+                    return Err(DoHError::InvalidData);
+                }
+            },
+            None => {
+                return Err(DoHError::InvalidData);
+            }
+        }
+    }
+    Ok(vec_host_path)
+}
 
 pub fn target_uri_from_query_string(http_query: &str) -> (Option<String>, Option<String>) {
     let mut targethost = None;

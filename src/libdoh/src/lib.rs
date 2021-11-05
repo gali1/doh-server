@@ -167,7 +167,7 @@ impl hyper::service::Service<http::Request<Body>> for DoHWithPeerAddr {
                                 &self_inner.peer_addr,
                             ) {
                                 Ok((sub, aud)) => {
-                                    debug!("Valid token: sub={:?}, aud={:?}", &sub, &aud);
+                                    debug!("Valid token or allowed ip: sub={:?}, aud={:?}", &sub, &aud);
                                     sub
                                 }
                                 Err(e) => {
@@ -340,6 +340,7 @@ impl DoH {
         encrypted_query: Vec<u8>,
         targethost: &str,
         targetpath: &str,
+        relays_host_path: Option<Vec<(String, String)>>,
         subscriber: Option<String>,
     ) -> Result<Response<Body>, http::Error> {
         // check allowed destinations
@@ -348,11 +349,32 @@ impl DoH {
                 warn!("[ODoH proxy] Unacceptable target: {}", targethost);
                 return http_error(StatusCode::BAD_REQUEST);
             }
+            if let Some(relays_hp) = relays_host_path.clone() {
+                if !relays_hp.iter().all(|(h, _)| allowed_domains.contains(h)) {
+                    warn!("[MODoH proxy] Some unacceptable intermediate relays: {:?}", relays_hp);
+                    return http_error(StatusCode::BAD_REQUEST);
+                }
+            }
         }
         // remove percent encoding
-        let target_uri = decode(&format!("https://{}{}", targethost, targetpath))
-            .unwrap_or(std::borrow::Cow::Borrowed(""))
-            .to_string();
+        let target_uri = match relays_host_path {
+            None => {
+                decode(&format!("https://{}{}", targethost, targetpath))
+                .unwrap_or(std::borrow::Cow::Borrowed(""))
+                .to_string()
+            },
+            Some(relays_hp) => {
+                let mut remained_relays = "".to_string();
+                for i in 1..relays_hp.len() {
+                    remained_relays = format!("{}&relayhost[{}]={}&relaypath[{}]={}", remained_relays, i-1, relays_hp[i].0, i-1, relays_hp[i].1);
+                }
+                let targeturl = format!("https://{}{}?targethost={}&targetpath={}{}", relays_hp[0].0, relays_hp[0].1, targethost, targetpath, remained_relays);
+                info!("[MODoH] Target URL with intermediate relays: {}", targeturl);
+                decode(&targeturl)
+                .unwrap_or(std::borrow::Cow::Borrowed(""))
+                .to_string()
+            }
+        };
         let encrypted_response = match self
             .globals
             .odoh_proxy
@@ -394,6 +416,10 @@ impl DoH {
                     (Some(h), Some(p)) => (h, p),
                     _ => return http_error(StatusCode::BAD_REQUEST),
                 };
+                let relays_host_path = match odoh_proxy::relay_url_from_query_string(http_query) {
+                    Ok(v) => { if v.len() == 0 { None } else { Some(v) } },
+                    Err(e) => { return http_error(StatusCode::from(e)) },
+                };
                 let encrypted_query = match self.read_body(req.into_body()).await {
                     Ok(q) => {
                         if q.len() == 0 {
@@ -404,7 +430,7 @@ impl DoH {
                     Err(e) => return http_error(StatusCode::from(e)),
                 };
 
-                self.serve_odoh_proxy(encrypted_query, &targethost, &targetpath, subscriber)
+                self.serve_odoh_proxy(encrypted_query, &targethost, &targetpath, relays_host_path, subscriber)
                     .await
             }
             Ok(_) => http_error(StatusCode::UNSUPPORTED_MEDIA_TYPE),

@@ -60,24 +60,24 @@ pub fn authenticate(
   let res = match headers_map {
     None => {
       // (O)DOH Targetの場合、ソースIPをここでチェックして弾く。Allowの場合はJWT無しでもOKにする。
-      if let ValidationLocation::Target = loc {
-        match &globals.odoh_allowed_proxy_ips {
-          Some(allowed_ips) => {
-            debug!("peer's Socket addr from TCP stream: {:?}", peer_addr);
-            let real_ip = if let Some(ip) = retrieve_real_ip(req) {
-              ip
-            } else {
-              peer_addr.ip()
-            };
-            debug!("real_ip from http header or tcp stream: {:?}", real_ip);
-            if allowed_ips.contains(&real_ip) {
-              debug!("real_ip is in allow list");
-              return Ok((None, None));
-            }
+      // if let ValidationLocation::Target = loc { // -> multihop対応としてproxyでもallow ipを導入。20211105
+      match &globals.odoh_allowed_proxy_ips {
+        Some(allowed_ips) => {
+          debug!("peer's Socket addr from TCP stream: {:?}", peer_addr);
+          let real_ip = if let Some(ip) = retrieve_real_ip(req) {
+            ip
+          } else {
+            peer_addr.ip()
+          };
+          debug!("real_ip from http header or tcp stream: {:?}", real_ip);
+          if allowed_ips.contains(&real_ip) {
+            debug!("real_ip is in allow list");
+            return Ok((None, None));
           }
-          None => (),
         }
-      };
+        None => (),
+      }
+      // };
       warn!("No authorization header and source addr is not in allow list");
       Err(StatusCode::BAD_REQUEST)
     }
