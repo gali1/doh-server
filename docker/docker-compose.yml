@@ -1,7 +1,7 @@
 version: "3"
 services:
   doh-proxy:
-    image: jqtype/doh-proxy:jwt-auth
+    image: jqtype/doh-proxy:multiple_relays
     container_name: doh-proxy-auth
     build:
       context: ./
