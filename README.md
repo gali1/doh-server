@@ -1,10 +1,11 @@
 # DoH Proxy with HTTP Authorization and Several Server Side Functions
 
-This repo is a fork of `doh-proxy`. This forked version has the following functions in addition to ones of original version.
+This repo is a fork of `doh-proxy`. This forked version has the following functions in addition to ones of original version. **Use [`junkurihara/doh-auth-proxy`](https://github.com/junkurihara/doh-auth-proxy) to fully leverage the following functions.
 
 - Proxy function of Oblivious DNS over HTTPS in addition to the target (server) function
-- access control by HTTP Authorization header with bearer token at target and proxy endpoints independently.
-- server-side blocking by query names (currently returns NXDOMAIN, and supports exact match, suffix match, and prefix match)
+- **Multiple hops of intermediate relays are enabled in addition to the standard ODoH protocol**, which is called *Mutualized Oblivious DNS over HTTPS* (MODoH).
+- **Access control by HTTP Authorization header with bearer token at target and proxy endpoints independently.**
+- Server-side blocking by query names (currently returns NXDOMAIN, and supports exact match, suffix match, and prefix match)
 - server-side overriding query names with specific IP addresses
 - (TODO:) configuration file
 - (TODO:) logging
@@ -50,12 +51,12 @@ OPTIONS:
     -X, --max-ttl <max_ttl>                                            Maximum TTL, in seconds [default: 604800]
     -T, --min-ttl <min_ttl>                                            Minimum TTL, in seconds [default: 10]
     -d, --odoh-allowed-proxy-ips <odoh_allowed_proxy_ips>
-            Allowed ODoH proxies' IP addresses/DoH client addresses from which this node (as (O)DoH target) can accept
-            requests, separated with comma. If some ips are given, requests from them are accepted even if authorization
+            Allowed ODoH proxies' IP addresses/DoH client addresses from which this node (as (O)DoH target and intermediate relay)
+            can accept requests, separated with comma. If some ips are given, requests from them are accepted even if authorization
             header is missing. If none is given and no authorization is configured, it can accept anywhere.
     -D, --odoh-allowed-target-domains <odoh_allowed_target_domains>
-            Allowed domains to which this node (as ODoH proxy) can forward ODoH request, separated with comma. If none
-            is given, it can forward anywhere.
+            Allowed domains of ODoH target or MODoH intermediate relay to which this node (as ODoH proxy) can forward ODoH request,
+            separated with comma. If none is given, it can forward anywhere.
     -q, --odoh-proxy-path <odoh_proxy_path>                            ODoH proxy URI path [default: /proxy]
     -p, --path <path>                                                  URI path [default: /dns-query]
     -g, --public-address <public_address>                              External IP address DoH clients will connect to
