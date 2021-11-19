@@ -369,7 +369,7 @@ impl DoH {
                     remained_relays = format!("{}&relayhost[{}]={}&relaypath[{}]={}", remained_relays, i-1, relays_hp[i].0, i-1, relays_hp[i].1);
                 }
                 let targeturl = format!("https://{}{}?targethost={}&targetpath={}{}", relays_hp[0].0, relays_hp[0].1, targethost, targetpath, remained_relays);
-                info!("[MODoH] Target URL with intermediate relays: {}", targeturl);
+                debug!("[MODoH] Target URL with intermediate relays: {}", targeturl);
                 decode(&targeturl)
                 .unwrap_or(std::borrow::Cow::Borrowed(""))
                 .to_string()
@@ -387,7 +387,7 @@ impl DoH {
 
         match encrypted_response {
             Ok(resp) => {
-                info!("[Proxy] Sub: {}", subscriber.unwrap_or("none".to_string()),);
+                debug!("[Proxy] Sub: {}", subscriber.unwrap_or("none".to_string()),);
                 Ok(resp)
             }
             Err(e) => http_error(StatusCode::from(e)),
@@ -574,7 +574,7 @@ impl DoH {
 
             ////////////////////////////////////////////////////////
             // TODO: ログるならこれを出すという別オプションにした方が良さそう
-            info!(
+            debug!(
                 "[Target] Sub: {}, Query: {}",
                 subscriber.unwrap_or("none".to_string()),
                 q_key.clone().key_string()
