@@ -50,6 +50,13 @@ EOF
 cp -p /etc/cron.daily/logrotate /etc/cron.hourly/
 service cron start
 
+# debug level logging
+LOG_LEVEL=info
+if [ ${DEBUG} ]; then
+  echo "Logging in debug mode"
+  LOG_LEVEL=debug
+fi
+
 echo "start DoH proxy"
 
 # read custom configuration
@@ -57,7 +64,7 @@ source /opt/doh-proxy/etc/.env
 
 echo "doh-proxy: upstream dns server address: ${UPSTREAM_ADDR}:${UPSTREAM_PORT}"
 
-/opt/doh-proxy/sbin/doh-proxy \
+RUST_LOG=${LOG_LEVE} /opt/doh-proxy/sbin/doh-proxy \
   --hostname=${HOSTNAME} \
   --server-address=${UPSTREAM_ADDR}:${UPSTREAM_PORT} \
   --listen-address=0.0.0.0:3000 \
