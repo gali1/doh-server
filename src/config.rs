@@ -321,7 +321,7 @@ pub fn parse_opts(globals: &mut Globals) {
 
         if let Ok(content) = fs::read_to_string(p) {
             if globals.is_hmac(ValidationLocation::Target) {
-                let truncate_vec: Vec<&str> = content.split("\n").collect();
+                let truncate_vec: Vec<&str> = content.split('\n').collect();
                 assert!(!truncate_vec.is_empty());
                 globals.set_validation_key(truncate_vec[0], ValidationLocation::Target);
             } else {
@@ -348,7 +348,7 @@ pub fn parse_opts(globals: &mut Globals) {
 
     if let Some(allowed) = matches.value_of("odoh_allowed_proxy_ips") {
         let allowed_proxy: HashSet<IpAddr> = allowed
-            .split(",")
+            .split(',')
             .filter(|c| !c.is_empty())
             .map(|c| c.parse().unwrap())
             .collect();
@@ -403,7 +403,7 @@ pub fn parse_opts(globals: &mut Globals) {
     let mut query_plugins = AppliedQueryPlugins::new();
     if let Some(override_list_path) = matches.value_of("domain_override") {
         if let Ok(content) = fs::read_to_string(override_list_path) {
-            let truncate_vec: Vec<&str> = content.split("\n").filter(|c| !c.is_empty()).collect();
+            let truncate_vec: Vec<&str> = content.split('\n').filter(|c| !c.is_empty()).collect();
             query_plugins.add(QueryPlugin::PluginDomainOverride(DomainOverrideRule::new(
                 truncate_vec,
             )));
@@ -412,7 +412,7 @@ pub fn parse_opts(globals: &mut Globals) {
     }
     if let Some(blocklist_path) = matches.value_of("domain_block") {
         if let Ok(content) = fs::read_to_string(blocklist_path) {
-            let truncate_vec: Vec<&str> = content.split("\n").filter(|c| c.len() != 0).collect();
+            let truncate_vec: Vec<&str> = content.split('\n').filter(|c| !c.is_empty()).collect();
             query_plugins.add(QueryPlugin::PluginDomainBlock(DomainBlockRule::new(
                 truncate_vec,
             )));
