@@ -322,7 +322,7 @@ pub fn parse_opts(globals: &mut Globals) {
         if let Ok(content) = fs::read_to_string(p) {
             if globals.is_hmac(ValidationLocation::Target) {
                 let truncate_vec: Vec<&str> = content.split("\n").collect();
-                assert_eq!(truncate_vec.len() > 0, true);
+                assert!(!truncate_vec.is_empty());
                 globals.set_validation_key(truncate_vec[0], ValidationLocation::Target);
             } else {
                 globals.set_validation_key(&content, ValidationLocation::Target);
@@ -335,7 +335,7 @@ pub fn parse_opts(globals: &mut Globals) {
         // Check audience and issuer if they are set when start
         let mut options = VerificationOptions::default();
         if let Some(iss) = matches.value_of("token_issuer_target") {
-            options.allowed_issuers = Some(HashSet::from_strings(&vec![iss]));
+            options.allowed_issuers = Some(HashSet::from_strings(&[iss]));
             info!("[Auth (O)DoH target] Allowed issuer: {}", iss);
         }
         if let Some(cids) = matches.value_of("client_ids_target") {
@@ -349,7 +349,7 @@ pub fn parse_opts(globals: &mut Globals) {
     if let Some(allowed) = matches.value_of("odoh_allowed_proxy_ips") {
         let allowed_proxy: HashSet<IpAddr> = allowed
             .split(",")
-            .filter(|c| c.len() != 0)
+            .filter(|c| !c.is_empty())
             .map(|c| c.parse().unwrap())
             .collect();
         globals.odoh_allowed_proxy_ips = Some(allowed_proxy);
@@ -403,7 +403,7 @@ pub fn parse_opts(globals: &mut Globals) {
     let mut query_plugins = AppliedQueryPlugins::new();
     if let Some(override_list_path) = matches.value_of("domain_override") {
         if let Ok(content) = fs::read_to_string(override_list_path) {
-            let truncate_vec: Vec<&str> = content.split("\n").filter(|c| c.len() != 0).collect();
+            let truncate_vec: Vec<&str> = content.split("\n").filter(|c| !c.is_empty()).collect();
             query_plugins.add(QueryPlugin::PluginDomainOverride(DomainOverrideRule::new(
                 truncate_vec,
             )));
@@ -421,11 +421,9 @@ pub fn parse_opts(globals: &mut Globals) {
     }
 
     // if options requiring to parse DNS message, this option is true
-    if query_plugins.plugins.len() > 0 {
+    if !query_plugins.plugins.is_empty() {
         globals.requires_dns_message_parsing = true;
         globals.query_plugins = Some(query_plugins);
-    } else {
-        globals.requires_dns_message_parsing = true;
     }
 
     #[cfg(feature = "tls")]
