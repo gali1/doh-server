@@ -21,7 +21,7 @@ arc-swap = "1.5.0"
 base64 = "0.13.0"
 byteorder = "1.4.3"
 bytes = "1.1.0"
-futures = "0.3.18"
+futures = "0.3.17"
 # hpke = "0.7.1"
 hpke = {git = "https://github.com/junkurihara/rust-hpke.git" }
 hyper = { version="0.14.16", default-features=false, features=["server", "http1", "http2", "stream"] }
@@ -30,10 +30,10 @@ rand = "0.8.4"
 reqwest = { version = "0.11.7", features = ["trust-dns"], optional = true}
 tokio = { version = "1.14.0", features = ["net", "rt-multi-thread", "parking_lot", "time", "sync"] }
 tokio-rustls = { version = "0.23.1", features = ["early-data"], optional = true }
-serde_json = "1.0.72"
+serde_json = "1.0.73"
 log = "0.4.14"
 jwt-simple = "0.10.8"
-p256 = { version="0.9.0", features=["pem", "pkcs8"] }
+p256 = { version="0.10.0", features=["pem", "pkcs8"] }
 trust-dns-proto = "0.20.3"
 regex = "1.5.4"
 urlencoding = { version = "2.1.0", optional = true }
