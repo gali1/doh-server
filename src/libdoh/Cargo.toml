@@ -21,7 +21,7 @@ arc-swap = "1.5.0"
 base64 = "0.13.0"
 byteorder = "1.4.3"
 bytes = "1.1.0"
-futures = "0.3.17"
+futures = "0.3.19"
 # hpke = "0.7.1"
 hpke = {git = "https://github.com/junkurihara/rust-hpke.git" }
 hyper = { version="0.14.16", default-features=false, features=["server", "http1", "http2", "stream"] }
