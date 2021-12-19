@@ -15,7 +15,7 @@ edition = "2018"
 readme = "README.md"
 
 [features]
-default = ["tls"]
+default = ["tls", "odoh-proxy"]
 tls = ["libdoh/tls"]
 odoh-proxy = ["libdoh/odoh-proxy"]
 

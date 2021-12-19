@@ -365,8 +365,8 @@ pub fn parse_opts(globals: &mut Globals) {
 
             if let Ok(content) = fs::read_to_string(p) {
                 if globals.is_hmac(ValidationLocation::Proxy) {
-                    let truncate_vec: Vec<&str> = content.split("\n").collect();
-                    assert_eq!(truncate_vec.len() > 0, true);
+                    let truncate_vec: Vec<&str> = content.split('\n').collect();
+                    assert!(!truncate_vec.is_empty());
                     globals.set_validation_key(truncate_vec[0], ValidationLocation::Proxy);
                 } else {
                     globals.set_validation_key(&content, ValidationLocation::Proxy);
@@ -379,7 +379,7 @@ pub fn parse_opts(globals: &mut Globals) {
             // Check audience and issuer if they are set when start
             let mut options = VerificationOptions::default();
             if let Some(iss) = matches.value_of("token_issuer_proxy") {
-                options.allowed_issuers = Some(HashSet::from_strings(&vec![iss]));
+                options.allowed_issuers = Some(HashSet::from_strings(&[iss]));
                 info!("[Auth (O)DoH proxy] Allowed issuer: {}", iss);
             }
             if let Some(cids) = matches.value_of("client_ids_proxy") {
@@ -392,8 +392,8 @@ pub fn parse_opts(globals: &mut Globals) {
 
         if let Some(allowed) = matches.value_of("odoh_allowed_target_domains") {
             let allowed_target: HashSet<String> = allowed
-                .split(",")
-                .filter(|c| c.len() != 0)
+                .split(',')
+                .filter(|c| !c.is_empty())
                 .map(|c| c.to_string())
                 .collect();
             globals.odoh_allowed_target_domains = Some(allowed_target);

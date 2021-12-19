@@ -11,7 +11,7 @@ categories = ["asynchronous", "network-programming", "command-line-utilities"]
 edition = "2018"
 
 [features]
-default = ["tls"]
+default = ["tls", "odoh-proxy"]
 tls = ["tokio-rustls"]
 odoh-proxy = ["reqwest", "urlencoding"]
 
