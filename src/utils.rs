@@ -3,7 +3,7 @@
 use std::net::{SocketAddr, ToSocketAddrs};
 use url::Url;
 
-pub(crate) fn verify_sock_addr(arg_val: String) -> Result<(), String> {
+pub(crate) fn verify_sock_addr(arg_val: &str) -> Result<(), String> {
     match arg_val.parse::<SocketAddr>() {
         Ok(_addr) => Ok(()),
         Err(_) => Err(format!(
@@ -13,7 +13,7 @@ pub(crate) fn verify_sock_addr(arg_val: String) -> Result<(), String> {
     }
 }
 
-pub(crate) fn verify_remote_server(arg_val: String) -> Result<(), String> {
+pub(crate) fn verify_remote_server(arg_val: &str) -> Result<(), String> {
     match arg_val.to_socket_addrs() {
         Ok(mut addr_iter) => match addr_iter.next() {
             Some(_) => Ok(()),
@@ -26,8 +26,8 @@ pub(crate) fn verify_remote_server(arg_val: String) -> Result<(), String> {
     }
 }
 
-pub(crate) fn verify_url(arg_val: String) -> Result<(), String> {
-    let url = match Url::parse(&arg_val) {
+pub(crate) fn verify_url(arg_val: &str) -> Result<(), String> {
+    let url = match Url::parse(arg_val) {
         Ok(addr) => addr,
         Err(_) => return Err(format!("Could not parse \"{}\" as a valid url.", arg_val)),
     };

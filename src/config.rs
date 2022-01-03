@@ -27,29 +27,29 @@ pub fn parse_opts(globals: &mut Globals) {
     let _ = include_str!("../Cargo.toml");
     let options = app_from_crate!()
         .arg(
-            Arg::with_name("hostname")
-                .short("H")
+            Arg::new("hostname")
+                .short('H')
                 .long("hostname")
                 .takes_value(true)
                 .help("Host name (not IP address) DoH clients will use to connect"),
         )
         .arg(
-            Arg::with_name("public_address")
-                .short("g")
+            Arg::new("public_address")
+                .short('g')
                 .long("public-address")
                 .takes_value(true)
                 .help("External IP address DoH clients will connect to"),
         )
         .arg(
-            Arg::with_name("public_port")
-                .short("j")
+            Arg::new("public_port")
+                .short('j')
                 .long("public-port")
                 .takes_value(true)
                 .help("External port DoH clients will connect to, if not 443"),
         )
         .arg(
-            Arg::with_name("listen_address")
-                .short("l")
+            Arg::new("listen_address")
+                .short('l')
                 .long("listen-address")
                 .takes_value(true)
                 .default_value(LISTEN_ADDRESS)
@@ -57,8 +57,8 @@ pub fn parse_opts(globals: &mut Globals) {
                 .help("Address to listen to"),
         )
         .arg(
-            Arg::with_name("server_address")
-                .short("u")
+            Arg::new("server_address")
+                .short('u')
                 .long("server-address")
                 .takes_value(true)
                 .default_value(SERVER_ADDRESS)
@@ -66,105 +66,105 @@ pub fn parse_opts(globals: &mut Globals) {
                 .help("Address to connect to"),
         )
         .arg(
-            Arg::with_name("local_bind_address")
-                .short("b")
+            Arg::new("local_bind_address")
+                .short('b')
                 .long("local-bind-address")
                 .takes_value(true)
                 .validator(verify_sock_addr)
                 .help("Address to connect from"),
         )
         .arg(
-            Arg::with_name("path")
-                .short("p")
+            Arg::new("path")
+                .short('p')
                 .long("path")
                 .takes_value(true)
                 .default_value(PATH)
                 .help("URI path"),
         )
         .arg(
-            Arg::with_name("max_clients")
-                .short("c")
+            Arg::new("max_clients")
+                .short('c')
                 .long("max-clients")
                 .takes_value(true)
                 .default_value(&max_clients)
                 .help("Maximum number of simultaneous clients"),
         )
         .arg(
-            Arg::with_name("max_concurrent")
-                .short("C")
+            Arg::new("max_concurrent")
+                .short('C')
                 .long("max-concurrent")
                 .takes_value(true)
                 .default_value(&max_concurrent_streams)
                 .help("Maximum number of concurrent requests per client"),
         )
         .arg(
-            Arg::with_name("timeout")
-                .short("t")
+            Arg::new("timeout")
+                .short('t')
                 .long("timeout")
                 .takes_value(true)
                 .default_value(&timeout_sec)
                 .help("Timeout, in seconds"),
         )
         .arg(
-            Arg::with_name("min_ttl")
-                .short("T")
+            Arg::new("min_ttl")
+                .short('T')
                 .long("min-ttl")
                 .takes_value(true)
                 .default_value(&min_ttl)
                 .help("Minimum TTL, in seconds"),
         )
         .arg(
-            Arg::with_name("max_ttl")
-                .short("X")
+            Arg::new("max_ttl")
+                .short('X')
                 .long("max-ttl")
                 .takes_value(true)
                 .default_value(&max_ttl)
                 .help("Maximum TTL, in seconds"),
         )
         .arg(
-            Arg::with_name("err_ttl")
-                .short("E")
+            Arg::new("err_ttl")
+                .short('E')
                 .long("err-ttl")
                 .takes_value(true)
                 .default_value(&err_ttl)
                 .help("TTL for errors, in seconds"),
         )
         .arg(
-            Arg::with_name("disable_keepalive")
-                .short("K")
+            Arg::new("disable_keepalive")
+                .short('K')
                 .long("disable-keepalive")
                 .help("Disable keepalive"),
         )
         .arg(
-            Arg::with_name("disable_post")
-                .short("P")
+            Arg::new("disable_post")
+                .short('P')
                 .long("disable-post")
                 .help("Disable POST queries"),
         )
         .arg(
-            Arg::with_name("allow_odoh_post")
-                .short("O")
+            Arg::new("allow_odoh_post")
+                .short('O')
                 .long("allow-odoh-post")
                 .help("Allow POST queries over ODoH even if they have been disabled for DoH"),
         )
         .arg(
-            Arg::with_name("validation_key_target")
-                .short("W")
+            Arg::new("validation_key_target")
+                .short('W')
                 .long("validation-key-target")
                 .takes_value(true)
                 .help("Target validation key file path like \"./public_key.pem\""),
         )
         .arg(
-            Arg::with_name("validation_algorithm_target")
-                .short("A")
+            Arg::new("validation_algorithm_target")
+                .short('A')
                 .long("validation-algorithm-target")
                 .takes_value(true)
                 .default_value(VALIDATION_ALGORITHM)
                 .help("Target validation algorithm"),
         )
         .arg(
-            Arg::with_name("token_issuer_target")
-                .short("M")
+            Arg::new("token_issuer_target")
+                .short('M')
                 .long("token-issuer-target")
                 .validator(verify_url)
                 .takes_value(true)
@@ -173,8 +173,8 @@ pub fn parse_opts(globals: &mut Globals) {
                 ),
         )
         .arg(
-            Arg::with_name("client_ids_target")
-                .short("S")
+            Arg::new("client_ids_target")
+                .short('S')
                 .long("client-ids-target")
                 .takes_value(true)
                 .help(
@@ -182,8 +182,8 @@ pub fn parse_opts(globals: &mut Globals) {
                 ),
         )
         .arg(
-            Arg::with_name("odoh_allowed_proxy_ips")
-                .short("d")
+            Arg::new("odoh_allowed_proxy_ips")
+                .short('d')
                 .long("odoh-allowed-proxy-ips")
                 .takes_value(true)
                 .help(
@@ -191,15 +191,15 @@ pub fn parse_opts(globals: &mut Globals) {
                 )
         )
         .arg(
-            Arg::with_name("domain_block")
-                .short("B")
+            Arg::new("domain_block")
+                .short('B')
                 .long("domain-block-rule")
                 .takes_value(true)
                 .help("Domains block rule file path like \"./domains_block.txt\""),
         )
         .arg(
-            Arg::with_name("domain_override")
-                .short("R")
+            Arg::new("domain_override")
+                .short('R')
                 .long("domain-override-rule")
                 .takes_value(true)
                 .help("Domains override rule file path like \"./domains_override.txt\""),
@@ -208,8 +208,8 @@ pub fn parse_opts(globals: &mut Globals) {
     #[cfg(feature = "tls")]
     let options = options
         .arg(
-            Arg::with_name("tls_cert_path")
-                .short("i")
+            Arg::new("tls_cert_path")
+                .short('i')
                 .long("tls-cert-path")
                 .takes_value(true)
                 .help(
@@ -217,8 +217,8 @@ pub fn parse_opts(globals: &mut Globals) {
                 ),
         )
         .arg(
-            Arg::with_name("tls_cert_key_path")
-                .short("I")
+            Arg::new("tls_cert_key_path")
+                .short('I')
                 .long("tls-cert-key-path")
                 .takes_value(true)
                 .help("Path to the PEM-encoded secret keys (only required for built-in TLS)"),
@@ -226,31 +226,31 @@ pub fn parse_opts(globals: &mut Globals) {
 
     #[cfg(feature = "odoh-proxy")]
     let options = options.arg(
-        Arg::with_name("odoh_proxy_path")
-            .short("q")
+        Arg::new("odoh_proxy_path")
+            .short('q')
             .long("odoh-proxy-path")
             .takes_value(true)
             .default_value(ODOH_PROXY_PATH)
             .help("ODoH proxy URI path"),
     )
     .arg(
-        Arg::with_name("validation_key_proxy")
-            .short("w")
+        Arg::new("validation_key_proxy")
+            .short('w')
             .long("validation-key-proxy")
             .takes_value(true)
             .help("Proxy validation key file path like \"./public_key.pem\""),
     )
     .arg(
-        Arg::with_name("validation_algorithm_proxy")
-            .short("a")
+        Arg::new("validation_algorithm_proxy")
+            .short('a')
             .long("validation-algorithm-proxy")
             .takes_value(true)
             .default_value(VALIDATION_ALGORITHM)
             .help("Proxy validation algorithm"),
     )
     .arg(
-        Arg::with_name("token_issuer_proxy")
-            .short("m")
+        Arg::new("token_issuer_proxy")
+            .short('m')
             .long("token-issuer-proxy")
             .validator(verify_url)
             .takes_value(true)
@@ -259,8 +259,8 @@ pub fn parse_opts(globals: &mut Globals) {
             ),
     )
     .arg(
-        Arg::with_name("client_ids_proxy")
-            .short("s")
+        Arg::new("client_ids_proxy")
+            .short('s')
             .long("client-ids-proxy")
             .takes_value(true)
             .help(
@@ -268,8 +268,8 @@ pub fn parse_opts(globals: &mut Globals) {
             ),
     )
     .arg(
-        Arg::with_name("odoh_allowed_target_domains")
-            .short("D")
+        Arg::new("odoh_allowed_target_domains")
+            .short('D')
             .long("odoh-allowed-target-domains")
             .takes_value(true)
             .help(
