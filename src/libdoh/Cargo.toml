@@ -16,7 +16,7 @@ tls = ["tokio-rustls"]
 odoh-proxy = ["reqwest", "urlencoding"]
 
 [dependencies]
-anyhow = "1.0.51"
+anyhow = "1.0.52"
 arc-swap = "1.5.0"
 base64 = "0.13.0"
 byteorder = "1.4.3"
@@ -27,10 +27,10 @@ hpke = {git = "https://github.com/junkurihara/rust-hpke.git" }
 hyper = { version="0.14.16", default-features=false, features=["server", "http1", "http2", "stream"] }
 odoh-rs = "1.0.0-alpha.1"
 rand = "0.8.4"
-reqwest = { version = "0.11.7", features = ["trust-dns"], optional = true}
+reqwest = { version = "0.11.8", features = ["trust-dns"], optional = true}
 tokio = { version = "1.15.0", features = ["net", "rt-multi-thread", "parking_lot", "time", "sync"] }
 tokio-rustls = { version = "0.23.2", features = ["early-data"], optional = true }
-serde_json = "1.0.73"
+serde_json = "1.0.74"
 log = "0.4.14"
 jwt-simple = "0.10.8"
 p256 = { version="0.10.0", features=["pem", "pkcs8"] }
