@@ -16,29 +16,42 @@ tls = ["tokio-rustls"]
 odoh-proxy = ["reqwest", "urlencoding"]
 
 [dependencies]
-anyhow = "1.0.52"
+anyhow = "1.0.55"
 arc-swap = "1.5.0"
 base64 = "0.13.0"
 byteorder = "1.4.3"
 bytes = "1.1.0"
 futures = "0.3.19"
 # hpke = "0.7.1"
-hpke = {git = "https://github.com/junkurihara/rust-hpke.git" }
-hyper = { version="0.14.16", default-features=false, features=["server", "http1", "http2", "stream"] }
+hpke = { git = "https://github.com/junkurihara/rust-hpke.git" }
+hyper = { version = "0.14.17", default-features = false, features = [
+  "server",
+  "http1",
+  "http2",
+  "stream",
+] }
 odoh-rs = "1.0.0-alpha.1"
-rand = "0.8.4"
-reqwest = { version = "0.11.8", features = ["trust-dns"], optional = true}
-tokio = { version = "1.15.0", features = ["net", "rt-multi-thread", "parking_lot", "time", "sync"] }
-tokio-rustls = { version = "0.23.2", features = ["early-data"], optional = true }
-serde_json = "1.0.74"
+rand = "0.8.5"
+reqwest = { version = "0.11.9", features = ["trust-dns"], optional = true }
+tokio = { version = "1.17.0", features = [
+  "net",
+  "rt-multi-thread",
+  "parking_lot",
+  "time",
+  "sync",
+] }
+tokio-rustls = { version = "0.23.2", features = [
+  "early-data",
+], optional = true }
+serde_json = "1.0.79"
 log = "0.4.14"
 jwt-simple = "0.10.8"
-p256 = { version="0.10.0", features=["pem", "pkcs8"] }
-trust-dns-proto = "0.20.3"
+p256 = { version = "0.10.1", features = ["pem", "pkcs8"] }
+trust-dns-proto = "0.20.4"
 regex = "1.5.4"
 urlencoding = { version = "2.1.0", optional = true }
 cedarwood = "0.4.5"
-rustls-pemfile = "0.2.1"
+rustls-pemfile = "0.3.0"
 
 [profile.release]
 codegen-units = 1
