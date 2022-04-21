@@ -25,7 +25,7 @@ futures = "0.3.21"
 # hpke = "0.7.1"
 hpke = { git = "https://github.com/junkurihara/rust-hpke.git" }
 hyper = { version = "0.14.18", default-features = false, features = ["server", "http1", "http2", "stream"] }
-odoh-rs = "1.0.0-alpha.1"
+odoh-rs = {git = "https://github.com/junkurihara/odoh-rs.git" }
 rand = "0.8.5"
 reqwest = { version = "0.11.10", features = ["trust-dns"], optional = true }
 tokio = { version = "1.17.0", features = ["net", "rt-multi-thread", "parking_lot", "time", "sync"] }
