@@ -16,7 +16,7 @@ tls = ["tokio-rustls"]
 odoh-proxy = ["reqwest", "urlencoding"]
 
 [dependencies]
-anyhow = "1.0.56"
+anyhow = "1.0.57"
 arc-swap = "1.5.0"
 base64 = "0.13.0"
 byteorder = "1.4.3"
@@ -32,7 +32,7 @@ tokio = { version = "1.17.0", features = ["net", "rt-multi-thread", "parking_lot
 tokio-rustls = { version = "0.23.3", features = ["early-data"], optional = true }
 serde_json = "1.0.79"
 log = "0.4.16"
-jwt-simple = "0.10.9"
+jwt-simple = "0.11.0"
 p256 = { version = "0.10.1", features = ["pem", "pkcs8"] }
 trust-dns-proto = "0.21.2"
 regex = "1.5.5"

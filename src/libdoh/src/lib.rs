@@ -176,7 +176,7 @@ impl hyper::service::Service<http::Request<Body>> for DoHWithPeerAddr {
                                 }
                             };
                         }
-                        // Draft:        https://datatracker.ietf.org/doc/html/draft-pauly-dprive-oblivious-doh-06
+                        // Draft:        https://datatracker.ietf.org/doc/html/draft-pauly-dprive-oblivious-doh-11
                         // Golang impl.: https://github.com/cloudflare/odoh-server-go
                         // Based on the draft and Golang implementation, only post method is allowed.
                         match *req.method() {
@@ -403,12 +403,9 @@ impl DoH {
         if self.globals.disable_post && !self.globals.allow_odoh_post {
             return http_error(StatusCode::METHOD_NOT_ALLOWED);
         }
-        // Draft:        https://datatracker.ietf.org/doc/html/draft-pauly-dprive-oblivious-doh-06
+        // Draft:        https://datatracker.ietf.org/doc/html/draft-pauly-dprive-oblivious-doh-11
         // Golang impl.: https://github.com/cloudflare/odoh-server-go
-        // The following follows the Golang implementation, which is different from the draft.
-        // In the draft, single endpoint, i.e., /dns-query, can accept proxy and target messages,
-        // and works as a proxy only when '?targethost' and '?tagetpath' exist in given uri query.
-        // However, in Golang implementation, proxy and target endpoints are separated.
+        // As in Draft and Golang implementation, proxy and target endpoints are served by separated endpoints.
         match Self::parse_content_type(&req) {
             Ok(DoHType::Oblivious) => {
                 let http_query = req.uri().query().unwrap_or("");
