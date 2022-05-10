@@ -28,12 +28,13 @@ hyper = { version = "0.14.18", default-features = false, features = ["server", "
 odoh-rs = {git = "https://github.com/junkurihara/odoh-rs.git" }
 rand = "0.8.5"
 reqwest = { version = "0.11.10", features = ["trust-dns"], optional = true }
-tokio = { version = "1.17.0", features = ["net", "rt-multi-thread", "parking_lot", "time", "sync"] }
-tokio-rustls = { version = "0.23.3", features = ["early-data"], optional = true }
-serde_json = "1.0.79"
-log = "0.4.16"
-jwt-simple = "0.11.0"
-p256 = { version = "0.10.1", features = ["pem", "pkcs8"] }
+tokio = { version = "1.18.2", features = ["net", "rt-multi-thread", "parking_lot", "time", "sync"] }
+tokio-rustls = { version = "0.23.4", features = ["early-data"], optional = true }
+serde_json = "1.0.81"
+log = "0.4.17"
+# jwt-simple = "0.11.0"
+jwt-simple = { git = "https://github.com/junkurihara/rust-jwt-simple" }
+p256 = { version = "0.11.0", features = ["pem", "pkcs8"] }
 trust-dns-proto = "0.21.2"
 regex = "1.5.5"
 urlencoding = { version = "2.1.0", optional = true }
