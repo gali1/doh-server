@@ -22,7 +22,6 @@ base64 = "0.13.0"
 byteorder = "1.4.3"
 bytes = "1.1.0"
 futures = "0.3.21"
-# hpke = "0.7.1"
 hpke = { git = "https://github.com/junkurihara/rust-hpke.git" }
 hyper = { version = "0.14.18", default-features = false, features = ["server", "http1", "http2", "stream"] }
 odoh-rs = {git = "https://github.com/junkurihara/odoh-rs.git" }
@@ -32,7 +31,6 @@ tokio = { version = "1.18.2", features = ["net", "rt-multi-thread", "parking_lot
 tokio-rustls = { version = "0.23.4", features = ["early-data"], optional = true }
 serde_json = "1.0.81"
 log = "0.4.17"
-# jwt-simple = "0.11.0"
 jwt-simple = { git = "https://github.com/junkurihara/rust-jwt-simple" }
 p256 = { version = "0.11.0", features = ["pem", "pkcs8"] }
 trust-dns-proto = "0.21.2"
