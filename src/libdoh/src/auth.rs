@@ -23,9 +23,9 @@ fn retrieve_item_ip(header_key: &str, headers: &hyper::header::HeaderMap) -> Opt
     if let Ok(string_item) = val.to_str() {
       let items: Vec<&str> = string_item
         .split_whitespace()
-        .flat_map(|x| x.split(","))
+        .flat_map(|x| x.split(','))
         .collect();
-      if items.len() > 0 {
+      if !items.is_empty() {
         if let Ok(parsed) = items[0].parse::<IpAddr>() {
           return Some(parsed);
         }
@@ -47,12 +47,13 @@ fn retrieve_real_ip(req: &hyper::Request<hyper::Body>) -> Option<IpAddr> {
   None
 }
 
+type AuthResult = Result<(Option<String>, Option<HashSet<String>>), Response<Body>>;
 pub fn authenticate(
   globals: &Globals,
   req: &hyper::Request<hyper::Body>,
   loc: ValidationLocation,
   peer_addr: &SocketAddr,
-) -> Result<(Option<String>, Option<HashSet<String>>), Response<Body>> {
+) -> AuthResult {
   let headers = req.headers();
   debug!("auth::authenticate, request header\n{:#?}", headers);
 
@@ -83,7 +84,7 @@ pub fn authenticate(
     }
     Some(auth_header) => {
       if let Ok(s) = auth_header.to_str() {
-        let v: Vec<&str> = s.split(" ").collect();
+        let v: Vec<&str> = s.split(' ').collect();
         if "Bearer" == v[0] && v.len() == 2 {
           verify_jwt(globals, v[1], loc)
         } else {
@@ -99,11 +100,7 @@ pub fn authenticate(
   match res {
     Err(e) => Err(Response::builder().status(e).body(Body::empty()).unwrap()),
     Ok(clm) => {
-      let aud = if let Some(a) = clm.audiences {
-        Some(a.into_set())
-      } else {
-        None
-      };
+      let aud = clm.audiences.map(|a| a.into_set());
       Ok((clm.subject, aud))
     }
   }
@@ -132,11 +129,11 @@ fn verify_jwt(
   // I think it is not needed provided token expiration (short-term) is properly handled.
   match clm {
     Ok(c) => {
-      return Ok(c);
+      Ok(c)
     }
     Err(e) => {
       warn!("Invalid token: {:?}", e);
-      return Err(StatusCode::FORBIDDEN);
+      Err(StatusCode::FORBIDDEN)
     }
   }
 }

@@ -1,7 +1,6 @@
 use hyper::StatusCode;
 use std::io;
 #[cfg(feature = "odoh-proxy")]
-use reqwest;
 
 #[derive(Debug)]
 pub enum DoHError {

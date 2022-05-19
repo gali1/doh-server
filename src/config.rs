@@ -404,18 +404,18 @@ pub fn parse_opts(globals: &mut Globals) {
     if let Some(override_list_path) = matches.value_of("domain_override") {
         if let Ok(content) = fs::read_to_string(override_list_path) {
             let truncate_vec: Vec<&str> = content.split('\n').filter(|c| !c.is_empty()).collect();
-            query_plugins.add(QueryPlugin::PluginDomainOverride(DomainOverrideRule::new(
+            query_plugins.add(QueryPlugin::PluginDomainOverride(Box::new(DomainOverrideRule::new(
                 truncate_vec,
-            )));
+            ))));
             info!("[Query plugin] Server-side domain overriding is enabled");
         }
     }
     if let Some(blocklist_path) = matches.value_of("domain_block") {
         if let Ok(content) = fs::read_to_string(blocklist_path) {
             let truncate_vec: Vec<&str> = content.split('\n').filter(|c| !c.is_empty()).collect();
-            query_plugins.add(QueryPlugin::PluginDomainBlock(DomainBlockRule::new(
+            query_plugins.add(QueryPlugin::PluginDomainBlock(Box::new(DomainBlockRule::new(
                 truncate_vec,
-            )));
+            ))));
             info!("[Query plugin] Server-side domain blocking is enabled");
         }
     }

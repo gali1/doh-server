@@ -21,15 +21,15 @@ impl MapsTo {
 
     if re_ipv4.is_match(override_target) {
       if let Ok(ipv4addr) = override_target.parse::<Ipv4Addr>() {
-        return Some(MapsTo::Ipv4Addr(ipv4addr));
+        Some(MapsTo::Ipv4Addr(ipv4addr))
       } else {
-        return None;
+        None
       }
     } else if re_ipv6.is_match(override_target) {
       if let Ok(ipv6addr) = override_target.parse::<Ipv6Addr>() {
-        return Some(MapsTo::Ipv6Addr(ipv6addr));
+        Some(MapsTo::Ipv6Addr(ipv6addr))
       } else {
-        return None;
+        None
       }
     } else {
       None
@@ -55,8 +55,8 @@ impl DomainOverrideRule {
           warn!("Invalid override rule: {}", split[0]);
           None
         } else {
-          let targets: Vec<MapsTo> = split[1].split(',').filter_map(|x| MapsTo::new(x)).collect();
-          let original_len = split[1].split(',').collect::<Vec<&str>>().len();
+          let targets: Vec<MapsTo> = split[1].split(',').filter_map(MapsTo::new).collect();
+          let original_len = split[1].split(',').count();
           let res = match original_len == targets.len() {
             true => Some((split[0].to_string(), targets)),
             false => {
@@ -93,7 +93,7 @@ impl DomainOverrideRule {
         MapsTo::Ipv6Addr(_) => q_type == RecordType::AAAA,
       });
     } else {
-      return None;
+      None
     }
   }
 }

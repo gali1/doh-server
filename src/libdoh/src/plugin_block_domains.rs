@@ -27,7 +27,7 @@ impl DomainBlockRule {
           d
         }
       })
-      .filter(|x| re.is_match(x) || (x.split('.').collect::<Vec<&str>>().len() == 1))
+      .filter(|x| re.is_match(x) || (x.split('.').count() == 1))
       .map(|y| y.to_string())
       .collect();
     let prefix_dict: Vec<String> = dict
@@ -40,19 +40,19 @@ impl DomainBlockRule {
       .filter(|d| !end_with_star.is_match(d))
       .map(|d| reverse_string(d))
       .collect();
-    let ref_vec: Vec<&str> = prefix_dict.iter().map(AsRef::as_ref).collect();
-    let ref_rev_vec: Vec<&str> = suffix_dict.iter().map(AsRef::as_ref).collect();
 
-    let prefix_kv: Vec<(&str, i32)> = ref_vec
-      .into_iter()
+    let prefix_kv: Vec<(&str, i32)> = prefix_dict
+      .iter()
+      .map(AsRef::as_ref)
       .enumerate()
       .map(|(k, s)| (s, k as i32))
       .collect();
     let mut prefix_cedar = Cedar::new();
     prefix_cedar.build(&prefix_kv);
 
-    let suffix_kv: Vec<(&str, i32)> = ref_rev_vec
-      .into_iter()
+    let suffix_kv: Vec<(&str, i32)> = suffix_dict
+      .iter()
+      .map(AsRef::as_ref)
       .enumerate()
       .map(|(k, s)| (s, k as i32))
       .collect();
@@ -77,23 +77,13 @@ impl DomainBlockRule {
     let mut matched_as_domain = matched_items.filter(|found| {
       if found.len() == rev_nn.len() {
         true
+      } else if let Some(nth) = rev_nn.chars().nth(found.chars().count()) {
+        nth.to_string() == "."
       } else {
-        if let Some(nth) = rev_nn.chars().nth(found.chars().count()) {
-          if nth.to_string() == "." {
-            true
-          } else {
-            false
-          }
-        } else {
-          false
-        }
+        false
       }
     });
-    if let Some(_) = matched_as_domain.next() {
-      return true;
-    } else {
-      return false;
-    }
+    matches!(matched_as_domain.next(), Some(_))
   }
 
   fn find_prefix_match(&self, query_domain: &str) -> bool {
@@ -104,20 +94,12 @@ impl DomainBlockRule {
 
     let mut matched_as_domain = matched_items.filter(|found| {
       if let Some(nth) = query_domain.chars().nth(found.chars().count()) {
-        if nth.to_string() == "." {
-          true
-        } else {
-          false
-        }
+        nth.to_string() == "."
       } else {
         false
       }
     });
-    if let Some(_) = matched_as_domain.next() {
-      return true;
-    } else {
-      return false;
-    }
+    matches!(matched_as_domain.next(), Some(_))
   }
 
   pub fn should_block(&self, q_key: &RequestQueryKey) -> bool {

@@ -24,6 +24,12 @@ pub struct AppliedQueryPlugins {
   pub plugins: Vec<QueryPlugin>,
 }
 
+impl Default for AppliedQueryPlugins {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 impl AppliedQueryPlugins {
   pub fn new() -> AppliedQueryPlugins {
     AppliedQueryPlugins {
@@ -53,7 +59,7 @@ impl AppliedQueryPlugins {
             debug!("Query {} maps to {:?}", q_key.name, mapsto);
             response.action = QueryPluginAction::Overridden;
             response.response_msg = Some(
-              utils::generate_override_message(&dns_msg, q_key, mapsto, min_ttl)
+              utils::generate_override_message(dns_msg, q_key, mapsto, min_ttl)
                 .map_err(|_| DoHError::InvalidData)?,
             );
             break;
@@ -63,7 +69,7 @@ impl AppliedQueryPlugins {
           if block_rule.should_block(q_key) {
             debug!("Query {} is blocked", q_key.name);
             response.action = QueryPluginAction::Blocked;
-            response.response_msg = Some(utils::generate_block_message(&dns_msg));
+            response.response_msg = Some(utils::generate_block_message(dns_msg));
           }
         }
       }
@@ -74,6 +80,6 @@ impl AppliedQueryPlugins {
 
 #[derive(Debug, Clone)]
 pub enum QueryPlugin {
-  PluginDomainBlock(DomainBlockRule),
-  PluginDomainOverride(DomainOverrideRule),
+  PluginDomainBlock(Box<DomainBlockRule>),
+  PluginDomainOverride(Box<DomainOverrideRule>),
 }

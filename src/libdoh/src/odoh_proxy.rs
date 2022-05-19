@@ -36,13 +36,11 @@ pub fn relay_url_from_query_string(
     let mut vec_host_path: Vec<(String, String)> = Vec::new();
     for i in 0..hm_host_path.len() {
         match hm_host_path.get(&i) {
-            Some(tuple) => {
-                if let (Some(h), Some(p)) = tuple {
+            Some((Some(h), Some(p))) => {
                     vec_host_path.push((h.to_string(), p.to_string()));
-                }
-                else {
-                    return Err(DoHError::InvalidData);
-                }
+            },
+            Some((_, _)) => {
+                return Err(DoHError::InvalidData);
             },
             None => {
                 return Err(DoHError::InvalidData);
@@ -82,8 +80,8 @@ impl ODoHProxy {
         // build client
         let mut headers = header::HeaderMap::new();
         let ct = "application/oblivious-dns-message";
-        headers.insert("Accept", header::HeaderValue::from_str(&ct).unwrap());
-        headers.insert("Content-Type", header::HeaderValue::from_str(&ct).unwrap());
+        headers.insert("Accept", header::HeaderValue::from_str(ct).unwrap());
+        headers.insert("Content-Type", header::HeaderValue::from_str(ct).unwrap());
         headers.insert(
             "Cache-Control",
             header::HeaderValue::from_str("no-cache, no-store").unwrap(),
@@ -95,21 +93,21 @@ impl ODoHProxy {
             .trust_dns(true)
             .default_headers(headers)
             .build()
-            .map_err(|e| DoHError::Reqwest(e))?;
+            .map_err(DoHError::Reqwest)?;
 
         Ok(ODoHProxy { client })
     }
 
     pub async fn forward_to_target(
         &self,
-        encrypted_query: &Vec<u8>,
+        encrypted_query: &[u8],
         target_uri: &str,
     ) -> Result<Vec<u8>, StatusCode> {
         // Only post method is allowed in ODoH
         let response = self
             .client
             .post(target_uri)
-            .body(encrypted_query.clone())
+            .body(encrypted_query.to_owned())
             .send()
             .await
             .map_err(|e| {
@@ -122,7 +120,7 @@ impl ODoHProxy {
             return Err(response.status());
         }
 
-        let body = response.bytes().await.map_err(|e| DoHError::Reqwest(e))?;
+        let body = response.bytes().await.map_err(DoHError::Reqwest)?;
         Ok(body.to_vec())
     }
 }

@@ -117,10 +117,7 @@ impl Globals {
             ValidationLocation::Target => &self.validation_algorithm_target,
             ValidationLocation::Proxy => &self.validation_algorithm_proxy,
         };
-        match alg {
-            Some(Algorithm::HS256) | Some(Algorithm::HS384) | Some(Algorithm::HS512) => true,
-            _ => false,
-        }
+        matches!(alg, Some(Algorithm::HS256) | Some(Algorithm::HS384) | Some(Algorithm::HS512))
     }
 }
 

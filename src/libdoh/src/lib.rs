@@ -365,8 +365,9 @@ impl DoH {
             },
             Some(relays_hp) => {
                 let mut remained_relays = "".to_string();
-                for i in 1..relays_hp.len() {
-                    remained_relays = format!("{}&relayhost[{}]={}&relaypath[{}]={}", remained_relays, i-1, relays_hp[i].0, i-1, relays_hp[i].1);
+                //for i in 1..relays_hp.len() {
+                for (i, item) in relays_hp.iter().enumerate().skip(1) {
+                    remained_relays = format!("{}&relayhost[{}]={}&relaypath[{}]={}", remained_relays, i-1, item.0, i-1, item.1);
                 }
                 let targeturl = format!("https://{}{}?targethost={}&targetpath={}{}", relays_hp[0].0, relays_hp[0].1, targethost, targetpath, remained_relays);
                 debug!("[MODoH] Target URL with intermediate relays: {}", targeturl);
@@ -387,7 +388,7 @@ impl DoH {
 
         match encrypted_response {
             Ok(resp) => {
-                debug!("[Proxy] Sub: {}", subscriber.unwrap_or("none".to_string()),);
+                debug!("[Proxy] Sub: {}", subscriber.unwrap_or_else(|| "none".to_string()),);
                 Ok(resp)
             }
             Err(e) => http_error(StatusCode::from(e)),
@@ -414,12 +415,12 @@ impl DoH {
                     _ => return http_error(StatusCode::BAD_REQUEST),
                 };
                 let relays_host_path = match odoh_proxy::relay_url_from_query_string(http_query) {
-                    Ok(v) => { if v.len() == 0 { None } else { Some(v) } },
+                    Ok(v) => { if v.is_empty() { None } else { Some(v) } },
                     Err(e) => { return http_error(StatusCode::from(e)) },
                 };
                 let encrypted_query = match self.read_body(req.into_body()).await {
                     Ok(q) => {
-                        if q.len() == 0 {
+                        if q.is_empty() {
                             return http_error(StatusCode::BAD_REQUEST);
                         }
                         q
@@ -573,7 +574,7 @@ impl DoH {
             // TODO: ログるならこれを出すという別オプションにした方が良さそう
             debug!(
                 "[Target] Sub: {}, Query: {}",
-                subscriber.unwrap_or("none".to_string()),
+                subscriber.unwrap_or_else(|| "none".to_string()),
                 q_key.clone().key_string()
             );
             if let Some(query_plugins) = globals.query_plugins.clone() {
