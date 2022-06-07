@@ -1,5 +1,5 @@
 #[global_allocator]
-static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 #[macro_use]
 extern crate clap;
@@ -8,20 +8,22 @@ mod config;
 mod constants;
 mod utils;
 
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::sync::Arc;
+use std::time::Duration;
+
+use libdoh::odoh::ODoHRotator;
+use libdoh::reexports::tokio;
 use libdoh::*;
 
 use crate::config::*;
 use crate::constants::*;
 
-use libdoh::odoh::ODoHRotator;
 #[cfg(feature = "odoh-proxy")]
 use libdoh::odoh_proxy::ODoHProxy;
-use libdoh::reexports::tokio;
 // use std::env;
 use std::io::Write;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::sync::Arc;
-use std::time::Duration;
+
 
 fn main() {
     // env::set_var("RUST_LOG", "info");

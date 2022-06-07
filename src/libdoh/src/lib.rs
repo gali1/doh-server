@@ -19,7 +19,6 @@ use crate::constants::*;
 pub use crate::errors::*;
 pub use crate::globals::*;
 use crate::log::*;
-
 use byteorder::{BigEndian, ByteOrder};
 use futures::prelude::*;
 use futures::task::{Context, Poll};
@@ -36,6 +35,9 @@ use tokio::net::{TcpListener, TcpSocket, UdpSocket};
 use tokio::runtime;
 #[cfg(feature = "odoh-proxy")]
 use urlencoding::decode;
+
+pub use crate::errors::*;
+pub use crate::globals::*;
 
 pub mod reexports {
     pub use jwt_simple;
@@ -106,8 +108,10 @@ where
 
 // extended the struct DoH in order to serve peer's IP addr.
 #[allow(clippy::type_complexity)]
+
 impl hyper::service::Service<http::Request<Body>> for DoHWithPeerAddr {
     type Response = Response<Body>;
+
     type Error = http::Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
 
