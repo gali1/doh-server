@@ -1,6 +1,4 @@
 use std::io;
-#[cfg(feature = "odoh-proxy")]
-
 use hyper::StatusCode;
 
 #[derive(Debug)]
