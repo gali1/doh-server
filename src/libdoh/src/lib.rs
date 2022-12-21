@@ -255,7 +255,11 @@ impl DoH {
             }
         }
         let query = match question_str.and_then(|question_str| {
-            base64::decode_config(question_str, base64::URL_SAFE_NO_PAD).ok()
+            base64::decode_engine(question_str, &base64::engine::fast_portable::FastPortable::from(
+                &base64::alphabet::URL_SAFE,
+                base64::engine::fast_portable::NO_PAD
+            )).ok()
+            // base64::decode_config(question_str, base64::URL_SAFE_NO_PAD).ok()
         }) {
             Some(query) => query,
             _ => return None,
