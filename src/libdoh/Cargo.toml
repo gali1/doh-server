@@ -1,6 +1,6 @@
 [package]
 name = "libdoh"
-version = "0.9.4"
+version = "0.9.6"
 authors = ["Frank Denis <github@pureftpd.org>", "Jun Kurihara (for JWT Auth)"]
 description = "DoH and Oblivious DoH library for the rust-doh app"
 keywords = ["dns", "https", "doh", "odoh", "proxy"]
@@ -17,11 +17,11 @@ odoh-proxy = ["reqwest", "urlencoding"]
 
 [dependencies]
 anyhow = "1.0.68"
-arc-swap = "1.5.1"
+arc-swap = "1.6.0"
 base64 = "0.20.0"
 byteorder = "1.4.3"
 bytes = "1.3.0"
-futures = "0.3.24"
+futures = "0.3.25"
 hpke = { git = "https://github.com/junkurihara/rust-hpke.git" }
 hyper = { version = "0.14.23", default-features = false, features = [
   "server",

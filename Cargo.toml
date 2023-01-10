@@ -1,6 +1,6 @@
 [package]
+version = "0.9.6"
 name = "doh-proxy"
-version = "0.9.4"
 authors = [
   "Frank Denis <github@pureftpd.org>",
   "Jun Kurihara (Auth/Mult-Relay)",
@@ -21,13 +21,14 @@ tls = ["libdoh/tls"]
 odoh-proxy = ["libdoh/odoh-proxy"]
 
 [dependencies]
-libdoh = { path = "src/libdoh", version = "0.9.4", default-features = false }
-clap = { version = "3.2.22", features = ["std", "cargo", "wrap_help"] }
+libdoh = { path = "src/libdoh", version = "0.9.6", default-features = false }
+clap = { version = "4", features = ["std", "cargo", "wrap_help", "string"] }
 dnsstamps = "0.1.9"
 mimalloc = { version = "0.1.32", default-features = false }
 jsonwebtoken = "8.2.0"
 env_logger = "0.10.0"
 url = "2.3.1"
+
 
 [package.metadata.deb]
 extended-description = """\

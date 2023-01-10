@@ -81,7 +81,7 @@ Below is the original README.md
 
 ---
 
-# doh-proxy
+# DoH Server (and ODoH server)
 
 A fast and secure DoH (DNS-over-HTTPS) and ODoH (Oblivious DoH) server.
 
@@ -144,6 +144,14 @@ OPTIONS:
     -u, --server-address <server_address>            Address to connect to [default: 9.9.9.9:53]
     -t, --timeout <timeout>                          Timeout, in seconds [default: 10]
 ```
+
+Example command-line:
+
+```sh
+doh-proxy -H 'doh.example.com' -u 127.0.0.1:53 -g 233.252.0.5
+```
+
+Here, `doh.example.com` is the host name (which should match a name included in the TLS certificate), `127.0.0.1:53` is the address of the DNS resolver, and `233.252.0.5` is the public IP address of the DoH server.
 
 ## HTTP/2 termination
 
@@ -229,10 +237,10 @@ upstream_addr = "127.0.0.1:3000"
 
 ## Example usage with `nginx`
 
-In an existing `server`, a `/doh` endpoint can be exposed that way:
+In an existing `server`, a `/dns-query` endpoint can be exposed that way:
 
 ```text
-location /doh {
+location /dns-query {
   proxy_pass http://127.0.0.1:3000;
 }
 ```

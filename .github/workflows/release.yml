@@ -14,7 +14,9 @@ jobs:
         id: get_version
         run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/}
 
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v3
+
+      - uses: goto-bus-stop/setup-zig@v2
 
       - uses: hecrj/setup-rust-action@master
         with:
@@ -27,18 +29,47 @@ jobs:
         run: rustup default | grep stable
 
       - name: Install cargo-deb
-        run: cargo install --debug cargo-deb
+        run: cargo install cargo-deb
 
-      - name: Release build
+      - name: Install cargo-zigbuild
+        run: cargo install cargo-zigbuild
+
+      - name: Release build Linux-x86-64
         run: |
-          env RUSTFLAGS="-C link-arg=-s" cargo build --release
+          rustup target add x86_64-unknown-linux-musl
+          env RUSTFLAGS="-C strip=symbols" cargo zigbuild --release --target x86_64-unknown-linux-musl
           mkdir doh-proxy
-          mv target/release/doh-proxy doh-proxy/
+          mv target/x86_64-unknown-linux-musl/release/doh-proxy doh-proxy/
           cp README.md localhost.pem doh-proxy/
           tar cJpf doh-proxy_${{ steps.get_version.outputs.VERSION }}_linux-x86_64.tar.bz2 doh-proxy
-      - name: Debian package
+          rm -fr doh-proxy
+
+      - name: Release build Linux-aarch64
         run: |
-          cargo deb
+          rustup target add aarch64-unknown-linux-musl
+          env RUSTFLAGS="-C strip=symbols" cargo zigbuild --release --target aarch64-unknown-linux-musl
+          mkdir doh-proxy
+          mv target/aarch64-unknown-linux-musl/release/doh-proxy doh-proxy/
+          cp README.md localhost.pem doh-proxy/
+          tar cJpf doh-proxy_${{ steps.get_version.outputs.VERSION }}_linux-aarch64.tar.bz2 doh-proxy
+          rm -fr doh-proxy
+
+      - name: Release build Windows-x86_64
+        run: |
+          rustup target add x86_64-pc-windows-gnu
+          env RUSTFLAGS="-C strip=symbols" cargo zigbuild --release --target x86_64-pc-windows-gnu
+          mkdir doh-proxy
+          mv target/x86_64-pc-windows-gnu/release/doh-proxy.exe doh-proxy/
+          cp README.md localhost.pem doh-proxy/
+          zip -9 -r doh-proxy_${{ steps.get_version.outputs.VERSION }}_windows-x86_64.zip doh-proxy
+          rm -fr doh-proxy
+
+      - name: Debian packages
+        run: |
+          rustup target add x86_64-unknown-linux-musl
+          env RUSTFLAGS="-C strip=symbols" cargo deb --no-strip --cargo-build=zigbuild --target=x86_64-unknown-linux-musl
+          rustup target add aarch64-unknown-linux-musl
+          env RUSTFLAGS="-C strip=symbols" cargo deb --no-strip --cargo-build=zigbuild --target=aarch64-unknown-linux-musl
 
       - name: Create release
         id: create_release
@@ -51,7 +82,7 @@ jobs:
           draft: true
           prerelease: false
 
-      - name: Upload Debian package
+      - name: Upload Debian package for x86_64
         id: upload-release-asset-debian
         uses: actions/upload-release-asset@v1
         env:
@@ -59,11 +90,24 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_name: "doh-proxy_${{ steps.get_version.outputs.VERSION }}_amd64.deb"
+          asset_path: "target/x86_64-unknown-linux-musl/debian/doh-proxy_${{ steps.get_version.outputs.VERSION }}_amd64.deb"
           asset_path: "target/debian/doh-proxy_${{ steps.get_version.outputs.VERSION }}_amd64.deb"
           asset_content_type: application/x-debian-package
 
-      - name: Upload tarball
-        id: upload-release-asset-tarball
+      - name: Upload Debian package for aarch64
+        id: upload-release-asset-debian
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_name: "doh-proxy_${{ steps.get_version.outputs.VERSION }}_aarch64.deb"
+          asset_path: "target/aarch64-unknown-linux-musl/debian/doh-proxy_${{ steps.get_version.outputs.VERSION }}_aarch64.deb"
+          asset_path: "target/debian/doh-proxy_${{ steps.get_version.outputs.VERSION }}_aarch64.deb"
+          asset_content_type: application/x-debian-package
+
+      - name: Upload tarball for linux-x86_64
+        id: upload-release-asset-tarball-linux-x86_64
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -72,3 +116,25 @@ jobs:
           asset_name: "doh-proxy_${{ steps.get_version.outputs.VERSION }}_linux-x86_64.tar.bz2"
           asset_path: "doh-proxy_${{ steps.get_version.outputs.VERSION }}_linux-x86_64.tar.bz2"
           asset_content_type: application/x-tar
+
+      - name: Upload tarball for linux-aarch64
+        id: upload-release-asset-tarball-linux-aarch64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_name: "doh-proxy_${{ steps.get_version.outputs.VERSION }}_linux-aarch64.tar.bz2"
+          asset_path: "doh-proxy_${{ steps.get_version.outputs.VERSION }}_linux-aarch64.tar.bz2"
+          asset_content_type: application/x-tar
+
+      - name: Upload tarball for windows-x86_64
+        id: upload-release-asset-tarball-windows-x86_64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_name: "doh-proxy_${{ steps.get_version.outputs.VERSION }}_windows-x86_64.zip"
+          asset_path: "doh-proxy_${{ steps.get_version.outputs.VERSION }}_windows-x86_64.zip"
+          asset_content_type: application/zip
