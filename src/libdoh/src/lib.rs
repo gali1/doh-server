@@ -19,6 +19,7 @@ use crate::constants::*;
 pub use crate::errors::*;
 pub use crate::globals::*;
 use crate::log::*;
+use base64::Engine;
 use byteorder::{BigEndian, ByteOrder};
 use futures::prelude::*;
 use futures::task::{Context, Poll};
@@ -36,19 +37,11 @@ use tokio::runtime;
 #[cfg(feature = "odoh-proxy")]
 use urlencoding::decode;
 
-pub use crate::errors::*;
-pub use crate::globals::*;
 
 pub mod reexports {
     pub use jwt_simple;
     pub use tokio;
 }
-
-const BASE64_URL_SAFE_NO_PAD: base64::engine::fast_portable::FastPortable =
-    base64::engine::fast_portable::FastPortable::from(
-        &base64::alphabet::URL_SAFE,
-        base64::engine::fast_portable::NO_PAD,
-    );
 
 #[derive(Clone, Debug)]
 struct DnsResponse {
@@ -261,11 +254,10 @@ impl DoH {
             }
         }
         let query = match question_str.and_then(|question_str| {
-            base64::decode_engine(question_str, &base64::engine::fast_portable::FastPortable::from(
+            base64::engine::GeneralPurpose::new(
                 &base64::alphabet::URL_SAFE,
-                base64::engine::fast_portable::NO_PAD
-            )).ok()
-            // base64::decode_config(question_str, base64::URL_SAFE_NO_PAD).ok()
+                base64::engine::general_purpose::NO_PAD
+            ).decode(question_str).ok()
         }) {
             Some(query) => query,
             _ => return None,
