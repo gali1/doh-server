@@ -81,7 +81,7 @@ Below is the original README.md
 
 ---
 
-# DoH Server (and ODoH server)
+# ![DoH server (and ODoH - Oblivious DoH server)](logo.png)
 
 A fast and secure DoH (DNS-over-HTTPS) and ODoH (Oblivious DoH) server.
 
@@ -153,13 +153,13 @@ doh-proxy -H 'doh.example.com' -u 127.0.0.1:53 -g 233.252.0.5
 
 Here, `doh.example.com` is the host name (which should match a name included in the TLS certificate), `127.0.0.1:53` is the address of the DNS resolver, and `233.252.0.5` is the public IP address of the DoH server.
 
-## HTTP/2 termination
+## HTTP/2 and HTTP/3 termination
 
-The recommended way to use `doh-proxy` is to use a TLS termination proxy (such as [hitch](https://github.com/varnish/hitch) or [relayd](https://bsd.plumbing/about.html)), a CDN or a web server with proxying abilities as a front-end.
+The recommended way to use `doh-proxy` is to use a TLS termination proxy (such as [hitch](https://github.com/varnish/hitch) or [relayd](https://man.openbsd.org/relayd.8)), a CDN or a web server with proxying abilities as a front-end.
 
 That way, the DoH service can be exposed as a virtual host, sharing the same IP addresses as existing websites.
 
-If `doh-proxy` and the HTTP/2 front-end run on the same host, using the HTTP protocol to communicate between both is fine.
+If `doh-proxy` and the HTTP/2 (/ HTTP/3) front-end run on the same host, using the HTTP protocol to communicate between both is fine.
 
 If both are on distinct networks, such as when using a CDN, `doh-proxy` can handle HTTPS requests, provided that it was compiled with the `tls` feature.
 
