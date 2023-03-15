@@ -21,9 +21,9 @@ arc-swap = "1.6.0"
 base64 = "0.21.0"
 byteorder = "1.4.3"
 bytes = "1.4.0"
-futures = "0.3.26"
+futures = "0.3.27"
 hpke = { git = "https://github.com/junkurihara/rust-hpke.git" }
-hyper = { version = "0.14.24", default-features = false, features = [
+hyper = { version = "0.14.25", default-features = false, features = [
   "server",
   "http1",
   "http2",
@@ -32,7 +32,7 @@ hyper = { version = "0.14.24", default-features = false, features = [
 odoh-rs = { git = "https://github.com/junkurihara/odoh-rs.git" }
 rand = "0.8.5"
 reqwest = { version = "0.11.14", features = ["trust-dns"], optional = true }
-tokio = { version = "1.25.0", features = [
+tokio = { version = "1.26.0", features = [
   "net",
   "rt-multi-thread",
   "time",
@@ -41,10 +41,10 @@ tokio = { version = "1.25.0", features = [
 tokio-rustls = { version = "0.23.4", features = [
   "early-data",
 ], optional = true }
-serde_json = "1.0.93"
+serde_json = "1.0.94"
 log = "0.4.17"
 jwt-simple = { git = "https://github.com/junkurihara/rust-jwt-simple" }
-p256 = { version = "0.12.0", features = ["pem", "pkcs8"] }
+p256 = { version = "0.13.0", features = ["pem", "pkcs8"] }
 trust-dns-proto = "0.22.0"
 regex = "1.7.1"
 urlencoding = { version = "2.1.2", optional = true }
