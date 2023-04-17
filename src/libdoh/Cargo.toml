@@ -1,7 +1,7 @@
 [package]
 name = "libdoh"
 authors = ["Frank Denis <github@pureftpd.org>", "Jun Kurihara (for JWT Auth)"]
-version = "0.9.8"
+version = "0.9.9"
 description = "DoH and Oblivious DoH library for the rust-doh app"
 keywords = ["dns", "https", "doh", "odoh", "proxy"]
 license = "MIT"
@@ -16,31 +16,19 @@ tls = ["tokio-rustls"]
 odoh-proxy = ["reqwest", "urlencoding"]
 
 [dependencies]
-anyhow = "1.0.69"
+anyhow = "1.0.70"
 arc-swap = "1.6.0"
 base64 = "0.21.0"
 byteorder = "1.4.3"
 bytes = "1.4.0"
-futures = "0.3.27"
+futures = "0.3.28"
 hpke = { git = "https://github.com/junkurihara/rust-hpke.git" }
-hyper = { version = "0.14.25", default-features = false, features = [
-  "server",
-  "http1",
-  "http2",
-  "stream",
-] }
+hyper = { version = "0.14.26", default-features = false, features = ["server", "http1", "http2", "stream"] }
 odoh-rs = { git = "https://github.com/junkurihara/odoh-rs.git" }
 rand = "0.8.5"
 reqwest = { version = "0.11.14", features = ["trust-dns"], optional = true }
-tokio = { version = "1.26.0", features = [
-  "net",
-  "rt-multi-thread",
-  "time",
-  "sync",
-] }
-tokio-rustls = { version = "0.23.4", features = [
-  "early-data",
-], optional = true }
+tokio = { version = "1.27.0", features = ["net", "rt-multi-thread", "time", "sync"] }
+tokio-rustls = { version = "0.23.4", features = ["early-data"], optional = true }
 serde_json = "1.0.94"
 log = "0.4.17"
 jwt-simple = { git = "https://github.com/junkurihara/rust-jwt-simple" }
