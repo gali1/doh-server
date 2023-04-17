@@ -26,15 +26,15 @@ hpke = { git = "https://github.com/junkurihara/rust-hpke.git" }
 hyper = { version = "0.14.26", default-features = false, features = ["server", "http1", "http2", "stream"] }
 odoh-rs = { git = "https://github.com/junkurihara/odoh-rs.git" }
 rand = "0.8.5"
-reqwest = { version = "0.11.14", features = ["trust-dns"], optional = true }
+reqwest = { version = "0.11.16", features = ["trust-dns"], optional = true }
 tokio = { version = "1.27.0", features = ["net", "rt-multi-thread", "time", "sync"] }
 tokio-rustls = { version = "0.23.4", features = ["early-data"], optional = true }
-serde_json = "1.0.94"
+serde_json = "1.0.96"
 log = "0.4.17"
 jwt-simple = { git = "https://github.com/junkurihara/rust-jwt-simple" }
-p256 = { version = "0.13.0", features = ["pem", "pkcs8"] }
+p256 = { version = "0.13.2", features = ["pem", "pkcs8"] }
 trust-dns-proto = "0.22.0"
-regex = "1.7.1"
+regex = "1.7.3"
 urlencoding = { version = "2.1.2", optional = true }
 cedarwood = "0.4.6"
 rustls-pemfile = "1.0.2"
