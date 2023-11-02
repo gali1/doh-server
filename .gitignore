@@ -5,6 +5,6 @@ Cargo.lock
 /target/
 /src/libdoh/target/
 
-.private/
+.private
 .env
-.vscode/
+.vscode

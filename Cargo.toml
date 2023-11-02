@@ -1,10 +1,10 @@
 [package]
 name = "doh-proxy"
+version = "0.9.10"
 authors = [
   "Frank Denis <github@pureftpd.org>",
   "Jun Kurihara (Auth/Mult-Relay)",
 ]
-version = "0.9.9"
 description = "A DNS-over-HTTPS (DoH) and ODoH (Oblivious DoH) proxy"
 keywords = ["dns", "https", "doh", "odoh", "proxy"]
 license = "MIT"
@@ -24,10 +24,10 @@ odoh-proxy = ["libdoh/odoh-proxy"]
 libdoh = { path = "src/libdoh", version = "0.9.9", default-features = false }
 clap = { version = "4", features = ["std", "cargo", "wrap_help", "string"] }
 dnsstamps = "0.1.9"
-mimalloc = { version = "0.1.36", default-features = false }
 jsonwebtoken = "8.2.0"
 env_logger = "0.10.0"
 url = "2.3.1"
+mimalloc = { version = "0.1.38", default-features = false }
 
 [package.metadata.deb]
 extended-description = """\
